@@ -2,6 +2,8 @@
   <img src="./assets/readme/hero.svg" width="100%" alt="Agents with Receipts · 有据可查：事故驱动的 agentic coding 实践手册。右侧是一张列着五条真实事故的收据小票，盖着'有据可查'红章：TOTAL 5 INCIDENTS · 0 SLOGANS。">
 </p>
 
+<p align="center"><strong><a href="https://alloevil.github.io/agents-with-receipts/">→ 在线阅读（GitHub Pages）</a></strong> · 左侧票根导航 · 内容与仓库 Markdown 实时同源</p>
+
 **每条实践都必须回答一个问题：*没这么做的时候，具体发生了什么？*** 答案是可以点开的 commit，而不是口号。
 
 Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是断言（"保持 CLAUDE.md 简短"、"先规划再编码"）。这里只收带证据链的条目：真实事故、可验证的修复、以及事故最终**沉淀成了哪条规则或哪个测试**。

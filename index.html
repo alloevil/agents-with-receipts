@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agents with Receipts · 有据可查</title>
+<meta name="description" content="事故驱动的 agentic coding 实践手册：每条实践都带可点开的 commit 证据。">
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<style>
+:root {
+  --canvas: #171512; --canvas-2: #1F1C18; --paper: #F6F1E7; --paper-dim: #EFE8DA;
+  --ink: #23201B; --ink-soft: #555047; --cream: #D9D2C4; --muted: #8A8378;
+  --stamp: #C0392B; --hairline: #3A362F; --hairline-paper: #D8D0C0;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--canvas); color: var(--cream); font-family: var(--sans); line-height: 1.75; }
+
+.frame { max-width: 1200px; margin: 0 auto; padding: 28px 20px 80px; }
+.hero { margin-bottom: 8px; }
+.hero img { width: 100%; display: block; border-radius: 24px; }
+
+.layout { display: grid; grid-template-columns: 264px 1fr; gap: 28px; margin-top: 28px; align-items: start; }
+
+/* 左侧：票根导航 */
+nav.stubs { position: sticky; top: 20px; }
+.stub-group { margin-bottom: 22px; }
+.stub-group > .label { font-family: var(--mono); font-size: 12px; letter-spacing: 3px; color: var(--muted); margin: 0 0 8px 4px; }
+.stub { display: flex; align-items: baseline; gap: 10px; width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: 10px; padding: 8px 12px; color: var(--cream); font-family: var(--sans); font-size: 15px; cursor: pointer; text-decoration: none; }
+.stub .no { font-family: var(--mono); font-size: 12.5px; color: var(--muted); min-width: 30px; }
+.stub:hover { border-color: var(--hairline); background: var(--canvas-2); }
+.stub.active { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+.stub.active .no { color: var(--stamp); font-weight: 700; }
+
+/* 右侧：小票纸内容区 */
+main.paper {
+  background: var(--paper); color: var(--ink); border-radius: 6px; padding: 44px 52px 56px; min-height: 70vh;
+  --tooth: 12px;
+  clip-path: polygon(0 8px, 1% 0, 2% 8px, 3% 0, 4% 8px, 5% 0, 6% 8px, 7% 0, 8% 8px, 9% 0, 10% 8px, 11% 0, 12% 8px, 13% 0, 14% 8px, 15% 0, 16% 8px, 17% 0, 18% 8px, 19% 0, 20% 8px, 21% 0, 22% 8px, 23% 0, 24% 8px, 25% 0, 26% 8px, 27% 0, 28% 8px, 29% 0, 30% 8px, 31% 0, 32% 8px, 33% 0, 34% 8px, 35% 0, 36% 8px, 37% 0, 38% 8px, 39% 0, 40% 8px, 41% 0, 42% 8px, 43% 0, 44% 8px, 45% 0, 46% 8px, 47% 0, 48% 8px, 49% 0, 50% 8px, 51% 0, 52% 8px, 53% 0, 54% 8px, 55% 0, 56% 8px, 57% 0, 58% 8px, 59% 0, 60% 8px, 61% 0, 62% 8px, 63% 0, 64% 8px, 65% 0, 66% 8px, 67% 0, 68% 8px, 69% 0, 70% 8px, 71% 0, 72% 8px, 73% 0, 74% 8px, 75% 0, 76% 8px, 77% 0, 78% 8px, 79% 0, 80% 8px, 81% 0, 82% 8px, 83% 0, 84% 8px, 85% 0, 86% 8px, 87% 0, 88% 8px, 89% 0, 90% 8px, 91% 0, 92% 8px, 93% 0, 94% 8px, 95% 0, 96% 8px, 97% 0, 98% 8px, 99% 0, 100% 8px, 100% calc(100% - 8px), 99% 100%, 98% calc(100% - 8px), 97% 100%, 96% calc(100% - 8px), 95% 100%, 94% calc(100% - 8px), 93% 100%, 92% calc(100% - 8px), 91% 100%, 90% calc(100% - 8px), 89% 100%, 88% calc(100% - 8px), 87% 100%, 86% calc(100% - 8px), 85% 100%, 84% calc(100% - 8px), 83% 100%, 82% calc(100% - 8px), 81% 100%, 80% calc(100% - 8px), 79% 100%, 78% calc(100% - 8px), 77% 100%, 76% calc(100% - 8px), 75% 100%, 74% calc(100% - 8px), 73% 100%, 72% calc(100% - 8px), 71% 100%, 70% calc(100% - 8px), 69% 100%, 68% calc(100% - 8px), 67% 100%, 66% calc(100% - 8px), 65% 100%, 64% calc(100% - 8px), 63% 100%, 62% calc(100% - 8px), 61% 100%, 60% calc(100% - 8px), 59% 100%, 58% calc(100% - 8px), 57% 100%, 56% calc(100% - 8px), 55% 100%, 54% calc(100% - 8px), 53% 100%, 52% calc(100% - 8px), 51% 100%, 50% calc(100% - 8px), 49% 100%, 48% calc(100% - 8px), 47% 100%, 46% calc(100% - 8px), 45% 100%, 44% calc(100% - 8px), 43% 100%, 42% calc(100% - 8px), 41% 100%, 40% calc(100% - 8px), 39% 100%, 38% calc(100% - 8px), 37% 100%, 36% calc(100% - 8px), 35% 100%, 34% calc(100% - 8px), 33% 100%, 32% calc(100% - 8px), 31% 100%, 30% calc(100% - 8px), 29% 100%, 28% calc(100% - 8px), 27% 100%, 26% calc(100% - 8px), 25% 100%, 24% calc(100% - 8px), 23% 100%, 22% calc(100% - 8px), 21% 100%, 20% calc(100% - 8px), 19% 100%, 18% calc(100% - 8px), 17% 100%, 16% calc(100% - 8px), 15% 100%, 14% calc(100% - 8px), 13% 100%, 12% calc(100% - 8px), 11% 100%, 10% calc(100% - 8px), 9% 100%, 8% calc(100% - 8px), 7% 100%, 6% calc(100% - 8px), 5% 100%, 4% calc(100% - 8px), 3% 100%, 2% calc(100% - 8px), 1% 100%, 0 calc(100% - 8px));
+}
+main.paper h1 { font-size: 30px; line-height: 1.35; margin: 0 0 18px; letter-spacing: 0.5px; }
+main.paper h2 { font-size: 22px; margin: 34px 0 12px; padding-top: 18px; border-top: 1.5px dashed var(--hairline-paper); }
+main.paper h3 { font-size: 18px; margin: 24px 0 8px; }
+main.paper p, main.paper li { color: var(--ink-soft); font-size: 16px; }
+main.paper li { margin: 6px 0 6px 2px; }
+main.paper ul, main.paper ol { padding-left: 24px; margin: 10px 0; }
+main.paper strong { color: var(--ink); }
+main.paper a { color: var(--stamp); text-decoration: none; border-bottom: 1px solid rgba(192,57,43,.35); }
+main.paper a:hover { border-bottom-color: var(--stamp); }
+main.paper blockquote { border-left: 3px solid var(--hairline-paper); padding: 2px 0 2px 16px; margin: 14px 0; }
+main.paper table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 15px; }
+main.paper th { font-family: var(--mono); font-size: 13px; letter-spacing: 1px; text-align: left; color: var(--ink); border-bottom: 2px solid var(--ink); padding: 8px 10px; }
+main.paper td { border-bottom: 1px dashed var(--hairline-paper); padding: 9px 10px; color: var(--ink-soft); vertical-align: top; }
+main.paper code { font-family: var(--mono); font-size: 14px; background: var(--paper-dim); border: 1px solid var(--hairline-paper); border-radius: 5px; padding: 1px 6px; color: var(--ink); }
+main.paper pre { background: var(--canvas); border-radius: 10px; padding: 18px 20px; overflow-x: auto; margin: 14px 0; }
+main.paper pre code { background: none; border: none; padding: 0; color: var(--paper); font-size: 14px; line-height: 1.7; }
+main.paper hr { border: none; border-top: 1.5px dashed var(--hairline-paper); margin: 22px 0; }
+main.paper img { max-width: 100%; }
+
+.meta-row { font-family: var(--mono); font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+.meta-row a { color: var(--muted); border-bottom: 1px dotted var(--muted); }
+.stamp-inline { display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--stamp); border: 2px solid var(--stamp); border-radius: 6px; padding: 2px 10px; transform: rotate(-2deg); }
+
+footer { margin-top: 42px; text-align: center; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+footer a { color: var(--cream); }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  nav.stubs { position: static; display: flex; flex-wrap: wrap; gap: 8px; }
+  .stub-group { margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .stub-group > .label { width: 100%; }
+  main.paper { padding: 32px 22px 44px; }
+}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="hero"><img src="assets/readme/hero.svg" alt="Agents with Receipts · 有据可查：事故驱动的 agentic coding 实践手册"></div>
+
+  <div class="layout">
+    <nav class="stubs" id="nav"></nav>
+    <main class="paper">
+      <div class="meta-row">
+        <span id="crumb">RECEIPT #—</span>
+        <span><a id="src-link" href="#" target="_blank" rel="noopener">在 GitHub 查看源文件</a></span>
+      </div>
+      <div id="content"><p>加载中…</p></div>
+      <footer>
+        <span class="stamp-inline">EVIDENCE ATTACHED · 有据可查</span><br><br>
+        MIT · 文档 CC BY 4.0 · <a href="https://github.com/alloevil/agents-with-receipts" target="_blank" rel="noopener">GitHub 仓库</a>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script>
+const REPO = 'https://github.com/alloevil/agents-with-receipts';
+
+// 导航即目录：id 用文件路径，页面内容直接 fetch 仓库里的 Markdown 原文渲染，
+// 内容永远和仓库单一事实源同步，页面本身零构建。
+const GROUPS = [
+  { label: 'START', items: [
+    { no: '00', title: '这是什么', file: '_start' },
+  ]},
+  { label: 'INCIDENTS · 事故案例', items: [
+    { no: 'IDX', title: '索引与格式', file: 'incidents/README.md' },
+    { no: '001', title: '猜 DOM 判登录态', file: 'incidents/001-dom-guessing-auth.md' },
+    { no: '002', title: '24h 滚动会话', file: 'incidents/002-rolling-session-expiry.md' },
+    { no: '003', title: 'stdout 当契约', file: 'incidents/003-output-parsing-contract.md' },
+    { no: '004', title: 'sed 误伤 lockfile', file: 'incidents/004-sed-version-bump.md' },
+    { no: '005', title: '过期构建产物', file: 'incidents/005-stale-build-artifact.md' },
+  ]},
+  { label: 'GUIDES · 指南', items: [
+    { no: 'P', title: '实践地图（八大类）', file: 'practices/README.md' },
+    { no: 'R', title: '跨工具对照表', file: 'rosetta/README.md' },
+    { no: 'L', title: 'agentsmd-lint', file: 'tools/agentsmd-lint/README.md' },
+  ]},
+  { label: 'TEMPLATES · 模板', items: [
+    { no: 'T1', title: 'AGENTS.md 模板', file: 'templates/AGENTS.md.template', raw: true },
+    { no: 'T2', title: 'RULES.md 模板', file: 'templates/RULES.md.template', raw: true },
+  ]},
+  { label: 'META', items: [
+    { no: 'C', title: '贡献指南', file: 'CONTRIBUTING.md' },
+  ]},
+];
+
+const START_HTML = `
+<h1>Agents with Receipts · 有据可查</h1>
+<p><strong>事故驱动的 agentic coding 实践手册。</strong>每条实践都必须回答一个问题：<em>没这么做的时候，具体发生了什么？</em>答案是可以点开的 commit，而不是口号。</p>
+<h2>我该从哪看起？</h2>
+<table>
+<tr><th>你想做的事</th><th>从这里进</th></tr>
+<tr><td><strong>给仓库写一份 AGENTS.md / CLAUDE.md</strong></td><td><a href="#/templates/AGENTS.md.template">模板</a>起步，对照<a href="#/practices/README.md">实践地图</a>第 1 节的取舍原则</td></tr>
+<tr><td><strong>不知道该往里写什么</strong></td><td>看<a href="#/incidents/README.md">事故案例</a>每条的「沉淀」一节——条目是从踩坑里提炼的</td></tr>
+<tr><td><strong>检查已有的 AGENTS.md 写得好不好</strong></td><td>跑 <a href="#/tools/agentsmd-lint/README.md">agentsmd-lint</a>，五条规则给出行号级反馈</td></tr>
+<tr><td><strong>换工具，或多工具混用</strong></td><td><a href="#/rosetta/README.md">跨工具对照表</a>：同一概念各家叫什么、放哪、坑在哪</td></tr>
+<tr><td><strong>系统过一遍实践全景</strong></td><td><a href="#/practices/README.md">实践地图</a>八大类，每条断言带官方出处</td></tr>
+<tr><td><strong>踩过有意思的坑，想让别人少踩</strong></td><td><a href="#/CONTRIBUTING.md">贡献指南</a>——带上证据链来投稿</td></tr>
+</table>
+<h2>只有十分钟？</h2>
+<p>读 <a href="#/incidents/001-dom-guessing-auth.md">001 猜 DOM 判登录态</a> 和 <a href="#/incidents/005-stale-build-artifact.md">005 过期构建产物</a> 两条事故，然后对自己的仓库跑一次：</p>
+<pre><code>git clone ${REPO}.git
+node agents-with-receipts/tools/agentsmd-lint/index.mjs 你的仓库/AGENTS.md</code></pre>
+<h2>核心立场</h2>
+<ol>
+<li><strong>证据优先。</strong>没有事故或数据支撑的实践进不了 incidents/。</li>
+<li><strong>半衰期意识。</strong>这个领域几个月一变；每条标注适用工具与日期，过期即删。</li>
+<li><strong>宁缺毋滥。</strong>手册的价值密度由最差的一条决定。</li>
+<li><strong>可执行 &gt; 可读。</strong>能写成 lint 规则、模板、脚手架的实践，不要只写成散文。</li>
+</ol>`;
+
+const ALL = GROUPS.flatMap(g => g.items);
+const byFile = Object.fromEntries(ALL.map(p => [p.file, p]));
+
+function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function currentFile() {
+  const h = decodeURIComponent(location.hash.replace(/^#\//, ''));
+  return byFile[h] ? h : '_start';
+}
+
+function renderNav() {
+  const cur = currentFile();
+  document.getElementById('nav').innerHTML = GROUPS.map(g => `
+    <div class="stub-group">
+      <p class="label">${g.label}</p>
+      ${g.items.map(p => `<a class="stub ${p.file === cur ? 'active' : ''}" href="#/${p.file}"><span class="no">${p.no}</span><span>${p.title}</span></a>`).join('')}
+    </div>`).join('');
+}
+
+// 把渲染出的站内 .md 相对链接改写成 hash 路由（跨文件目录要归一化）
+function rewriteLinks(root, baseDir) {
+  for (const a of root.querySelectorAll('a[href]')) {
+    const href = a.getAttribute('href');
+    if (/^(https?:|#|mailto:)/.test(href)) { if (/^https?:/.test(href)) { a.target = '_blank'; a.rel = 'noopener'; } continue; }
+    const parts = (baseDir + href).split('/').filter(x => x !== '.');
+    const stack = [];
+    for (const p of parts) { if (p === '..') stack.pop(); else stack.push(p); }
+    let norm = stack.join('/').replace(/\/$/, '');
+    const target = byFile[norm] ? norm : byFile[norm + '/README.md'] ? norm + '/README.md' : null;
+    if (target) a.setAttribute('href', '#/' + target);
+    else { a.setAttribute('href', REPO + '/blob/main/' + norm); a.target = '_blank'; a.rel = 'noopener'; }
+  }
+}
+
+async function renderPage() {
+  const file = currentFile();
+  renderNav();
+  const content = document.getElementById('content');
+  const crumb = document.getElementById('crumb');
+  const srcLink = document.getElementById('src-link');
+
+  if (file === '_start') {
+    crumb.textContent = 'RECEIPT #00 · START';
+    srcLink.href = REPO;
+    content.innerHTML = START_HTML;
+  } else {
+    const page = byFile[file];
+    crumb.textContent = `RECEIPT #${page.no} · ${file}`;
+    srcLink.href = `${REPO}/blob/main/${file}`;
+    try {
+      const resp = await fetch(file);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const text = await resp.text();
+      if (page.raw) {
+        // 模板含 <占位符>，按源码展示可整段复制
+        content.innerHTML = `<h1>${esc(page.title)}</h1><p>复制后把每个占位符换成你的事实；填不出来的整节删掉，写完跑 agentsmd-lint。</p><pre><code>${esc(text)}</code></pre>`;
+      } else {
+        content.innerHTML = marked.parse(text);
+        rewriteLinks(content, file.includes('/') ? file.slice(0, file.lastIndexOf('/') + 1) : '');
+      }
+    } catch (e) {
+      content.innerHTML = `<h1>加载失败</h1><p>${esc(e.message)}。若在本地直接双击打开本文件，浏览器会拦截 fetch——用 <code>python3 -m http.server</code> 起个静态服务，或直接访问线上版本。</p>`;
+    }
+  }
+  window.scrollTo({ top: 0 });
+}
+
+window.addEventListener('hashchange', renderPage);
+renderPage();
+</script>
+</body>
+</html>
