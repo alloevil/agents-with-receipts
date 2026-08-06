@@ -76,3 +76,18 @@ test('深层子标题不误报父节为空', () => {
     const f = lint(['## 父', '### 子', '子的内容。'].join('\n'));
     assert.strictEqual(byRule(f, 'empty-section').length, 0);
 });
+
+test('行内 code span 是提及不是使用：`TODO`/`酌情` 不报，围栏内占位符仍报', () => {
+    const mention = lint(['# t', '规则表引用 `TODO` 与 `酌情` 做示例是合法的。'].join('\n'));
+    assert.strictEqual(mention.length, 0);
+    // 围栏代码块里的占位符仍然说明模板没填完
+    const fence = lint(['# t', '正文', '```', 'cp <项目名>.conf /etc/', '```'].join('\n'));
+    assert.strictEqual(fence.filter(f => f.rule === 'placeholder').length, 1);
+});
+
+test('含中文 alt 的 HTML 标签不是占位符', () => {
+    const f = lint(['# t', '正文', '<img src="./a.svg" width="100%" alt="第一板块：事故案例，可点开的 commit。">'].join('\n'));
+    assert.strictEqual(f.filter(x => x.rule === 'placeholder').length, 0);
+    // 真占位符仍然要抓
+    assert.strictEqual(lint(['# t', '正文', '目标是 <项目名>'].join('\n')).filter(x => x.rule === 'placeholder').length, 1);
+});

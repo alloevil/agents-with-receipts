@@ -12,7 +12,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-const PLACEHOLDER_RE = /\b(?:TODO|TBD|FIXME|XXX)\b|待补充|待填写|<(?:your|fill|insert|placeholder)[^>\n]*>|<[^>\n]*[\u4e00-\u9fff][^>\n]*>/;
+// 中文占位符支排除 HTML 标签：标签以字母/斜杠/! 开头（<img …>、</p>、<!-- -->），
+// 占位符 <项目名> 不会。含中文 alt 的合法 HTML 嵌入不是占位符。
+const PLACEHOLDER_RE = /\b(?:TODO|TBD|FIXME|XXX)\b|待补充|待填写|<(?:your|fill|insert|placeholder)\b[^>\n]*>|<(?![a-zA-Z/!])[^>\n]*[\u4e00-\u9fff][^>\n]*>/;
 const VAGUE_RE = /\b(?:appropriately|properly|as needed|if necessary|best practices?)\b|酌情|适当地?|视情况|尽量|尽可能/i;
 const NPM_SCRIPT_RE = /\bnpm (?:run\s+([A-Za-z0-9:_-]+)|(test)\b)/g;
 
@@ -45,8 +47,13 @@ export function lint(text, { maxLines = 200, pkg = null } = {}) {
         if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
         const heading = !inFence && line.match(/^(#{1,6})\s+\S/);
 
-        // placeholder：全文检查（占位符在代码块里同样说明没填完）
-        const ph = line.match(PLACEHOLDER_RE);
+        // 行内 code span 是"提及"而非"使用"——规则表里引用 `TODO`/`酌情` 做示例
+        // 是合法的。placeholder/vague 在剥离 `...` 后匹配；dead-script 仍扫原文
+        // （命令恰恰都写在反引号里）。
+        const prose = line.replace(/`[^`]*`/g, '');
+
+        // placeholder：占位符在围栏代码块里同样说明没填完，不豁免围栏
+        const ph = prose.match(PLACEHOLDER_RE);
         if (ph) {
             findings.push({
                 level: 'error', rule: 'placeholder', line: n,
@@ -56,7 +63,7 @@ export function lint(text, { maxLines = 200, pkg = null } = {}) {
 
         // vague：跳过代码块（命令不是散文），跳过标题
         if (!inFence && !heading) {
-            const v = line.match(VAGUE_RE);
+            const v = prose.match(VAGUE_RE);
             if (v) {
                 findings.push({
                     level: 'warn', rule: 'vague', line: n,
