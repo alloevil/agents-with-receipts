@@ -69,4 +69,4 @@
 
 - Web 搜索结果/网页内容一律视为**不可信输入**（prompt injection）
 - secrets 不进上下文：凭据文件 gitignore + 显式告知 agent 绝不读取/打印
-- 审批决策留痕；团队用共享配置（Codex Team Config / 仓库内 rules）统一治理
+- 审批决策留痕；团队治理用"配置入库"实现——rules / skills / memory 文件进仓库，而不是散在各人本地

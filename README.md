@@ -39,7 +39,7 @@ Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是
   <img src="./assets/readme/section-rosetta.svg" width="100%" alt="第二板块 rosetta：跨工具对照，同一概念在 Claude Code、Codex、Cursor、Copilot 里叫什么、放哪。">
 </p>
 
-生态碎片化严重：memory 文件、条件规则、skills、hooks、沙箱、审批、MCP、headless——每家叫法和位置都不同。[`rosetta/`](rosetta/) 是一张标注了验证日期和置信度的对照表，换工具或多工具并用时先看它。
+概念在四个工具里的叫法和位置各不相同：memory 文件、条件规则、skills、hooks、沙箱、审批、MCP、headless。[`rosetta/`](rosetta/) 是一张**逐格对照官方文档核实**的对照表——每个单元格本身就是官方文档链接，点开即可验证（2026-08 核实，也记录了四家正在收敛的四个层面）。
 
 一个立刻能用的结论：**根级 `AGENTS.md` 做单一事实源**（[agents.md](https://agents.md) 开放标准，60k+ 项目在用），`CLAUDE.md` 软链过去：
 
