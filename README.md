@@ -1,4 +1,4 @@
-# Agent Field Manual · Agent 实战手册
+# Agents with Receipts · 有据可查
 
 **事故驱动的 agentic coding 实践手册。** 每条实践都必须回答一个问题：*没这么做的时候，具体发生了什么？*
 
