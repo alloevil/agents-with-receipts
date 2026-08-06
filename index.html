@@ -120,7 +120,9 @@ const GROUPS = [
     { no: '08', title: '安全与治理', file: 'practices/08-security-governance.md' },
   ]},
   { label: 'TOOLS · 工具', items: [
-    { no: 'L', title: 'agentsmd-lint', file: 'tools/agentsmd-lint/README.md' },
+    { no: 'L1', title: 'agentsmd-lint 查文件', file: 'tools/agentsmd-lint/README.md' },
+    { no: 'L2', title: 'agents-doctor 查仓库', file: 'tools/agents-doctor/README.md' },
+    { no: 'L3', title: 'agents-init 生成起点', file: 'tools/agents-init/README.md' },
   ]},
   { label: 'TEMPLATES · 模板', items: [
     { no: 'T1', title: 'AGENTS.md 模板', file: 'templates/AGENTS.md.template', raw: true },
@@ -140,7 +142,7 @@ const START_HTML = `
 <tr><td><strong>第一次给仓库配 agent 基建</strong></td><td>跟做 <a href="#/practices/00-agent-ready-walkthrough.md">00 walkthrough</a>：AGENTS.md → 条件规则 → hook → lint 进 CI，每步可验证</td></tr>
 <tr><td><strong>给仓库写一份 AGENTS.md / CLAUDE.md</strong></td><td><a href="#/templates/AGENTS.md.template">模板</a>起步，对照 <a href="#/practices/01-memory-files.md">01 Memory 文件</a>的取舍原则</td></tr>
 <tr><td><strong>不知道该用 memory 还是 rule 还是 hook</strong></td><td><a href="#/practices/02-mechanism-selection.md">02 机制选型</a>：两个维度定位五种机制</td></tr>
-<tr><td><strong>检查已有的 AGENTS.md 写得好不好</strong></td><td>跑 <a href="#/tools/agentsmd-lint/README.md">agentsmd-lint</a>，五条规则给出行号级反馈</td></tr>
+<tr><td><strong>检查已有的 AGENTS.md 写得好不好</strong></td><td>跑 <a href="#/tools/agentsmd-lint/README.md">agentsmd-lint</a>（查文件）和 <a href="#/tools/agents-doctor/README.md">agents-doctor</a>（查整仓基建）</td></tr>
 <tr><td><strong>换工具，或多工具混用</strong></td><td><a href="#/rosetta/README.md">跨工具对照表</a>：同一概念各家叫什么、放哪、就近规则差在哪</td></tr>
 <tr><td><strong>系统过一遍实践全景</strong></td><td><a href="#/practices/README.md">实践地图</a>九个章节，每条实践带官方出处</td></tr>
 <tr><td><strong>发现内容过期或有错</strong></td><td><a href="#/CONTRIBUTING.md">贡献指南</a>——带官方链接来提 PR，过期条目删除而非堆积</td></tr>

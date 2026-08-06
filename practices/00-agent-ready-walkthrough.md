@@ -4,6 +4,8 @@
 
 本章是一条端到端路径：给一个已有代码的仓库，配齐 memory 文件、条件规则、hook 拦截和 CI 检查。每一步以真实工具行为收尾——验证不通过就停在原地修，不要带病进下一步。示例设定为 Node 20 + npm 的订单服务仓库，其它技术栈只需替换命令表内容。
 
+> 快速路径：Step 1-2 可以用 [`agents-init`](../tools/agents-init/) 一条命令完成（`node tools/agents-init/index.mjs 你的仓库 --link`，生成预填真实命令的 AGENTS.md + CLAUDE.md 软链）；Step 6 的验收清单可以用 [`agents-doctor`](../tools/agents-doctor/) 自动化。手工走一遍的价值在于理解每一步为什么存在。
+
 ## Step 1：写一份 20-30 行的最小 AGENTS.md
 
 **场景**：仓库还没有任何 agent 指南文件，agent 每次会话都在猜测试命令和禁区。

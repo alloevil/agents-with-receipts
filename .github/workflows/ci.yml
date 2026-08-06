@@ -18,3 +18,7 @@ jobs:
         run: npm test
       - name: Self-lint the manual's own docs
         run: npm run lint:self
+      - name: Lint AGENTS.md (agentsmd-lint gate)
+        run: node tools/agentsmd-lint/index.mjs AGENTS.md
+      - name: Repo health (agents-doctor)
+        run: node tools/agents-doctor/index.mjs .

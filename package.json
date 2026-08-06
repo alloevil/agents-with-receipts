@@ -5,9 +5,14 @@
   "type": "module",
   "license": "MIT",
   "engines": { "node": ">=20" },
-  "bin": { "agentsmd-lint": "tools/agentsmd-lint/index.mjs" },
+  "bin": {
+    "agentsmd-lint": "tools/agentsmd-lint/index.mjs",
+    "agents-doctor": "tools/agents-doctor/index.mjs",
+    "agents-init": "tools/agents-init/index.mjs"
+  },
   "scripts": {
     "test": "node --test",
-    "lint:self": "node tools/agentsmd-lint/index.mjs README.md rosetta/README.md practices/*.md"
+    "lint:self": "node tools/agentsmd-lint/index.mjs README.md rosetta/README.md practices/*.md",
+    "doctor": "node tools/agents-doctor/index.mjs ."
   }
 }

@@ -15,7 +15,7 @@ Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是
 | **第一次给仓库配 agent 基建** | 跟做 [`00 walkthrough`](practices/00-agent-ready-walkthrough.md)：AGENTS.md → 条件规则 → hook → lint 进 CI，每步可验证 |
 | **给仓库写一份 AGENTS.md / CLAUDE.md** | [`templates/`](templates/) 骨架起步，对照 [`01 Memory 文件`](practices/01-memory-files.md)的取舍原则 |
 | **不知道该用 memory 还是 rule 还是 hook** | [`02 机制选型`](practices/02-mechanism-selection.md)：两个维度定位五种机制 |
-| **检查已有的 AGENTS.md 写得好不好** | 跑 [`tools/agentsmd-lint`](tools/agentsmd-lint/)，五条规则给出行号级反馈 |
+| **检查已有的 AGENTS.md 写得好不好** | 跑 [`agentsmd-lint`](tools/agentsmd-lint/)（查文件）和 [`agents-doctor`](tools/agents-doctor/)（查整仓基建） |
 | **在换工具，或 Claude Code / Codex / Cursor 混着用** | [`rosetta/`](rosetta/) 对照表：同一概念各家叫什么、放哪、就近规则差在哪 |
 | **系统过一遍 agentic coding 的实践全景** | [`practices/`](practices/) 九个章节，每条实践「场景→做法→依据→边界」带官方出处 |
 | **发现内容过期或有错** | [CONTRIBUTING.md](CONTRIBUTING.md)——带官方链接来提 PR，过期条目删除而非堆积 |
@@ -43,24 +43,24 @@ ln -s AGENTS.md CLAUDE.md
 配套 [`templates/`](templates/)：从真实项目提炼的 `AGENTS.md` / `RULES.md` 骨架，注释里写明用法，和下面的 linter 配合使用。
 
 <p align="center">
-  <img src="./assets/readme/section-lint.svg" width="100%" alt="第三板块 tools/agentsmd-lint：AGENTS.md 质量检查器，零依赖。">
+  <img src="./assets/readme/section-lint.svg" width="100%" alt="第三板块 tools 工具箱：lint 查文件、doctor 查仓库、init 生成起点，零依赖。">
 </p>
 
-「treat your memory file like code」说了两年，一直没有工具支撑——这是那个工具。零依赖，Node ≥ 20：
+把实践变成可执行检查的三件套。零依赖，Node ≥ 20：
+
+| 工具 | 一条命令 | 干什么 |
+|---|---|---|
+| [`agentsmd-lint`](tools/agentsmd-lint/) | `node tools/agentsmd-lint/index.mjs AGENTS.md` | 查**单个文件**质量：行数超标 / 占位符 / 模糊措辞 / 引用不存在的 npm 脚本 / 空标题节 |
+| [`agents-doctor`](tools/agents-doctor/) | `node tools/agents-doctor/index.mjs .` | 查**整个仓库**的 agent 基建：AGENTS.md 质量、CLAUDE.md 软链/漂移、四工具的规则/hooks/skills、secrets 是否 gitignore、CI 门禁 |
+| [`agents-init`](tools/agents-init/) | `node tools/agents-init/index.mjs . --link` | 探测 package.json / Cargo.toml / pyproject / go.mod，生成**预填真实命令**的 AGENTS.md 起点 + CLAUDE.md 软链，产物自动过 lint |
+
+三个工具发现 error 都以退出码 1 收场，可直接进 CI。本仓库 dogfood 全套：CI 里跑 lint 门禁 + doctor 体检，根目录的 `AGENTS.md` 就是 `agents-init` 生成后手工补充的。
 
 ```bash
-node tools/agentsmd-lint/index.mjs path/to/AGENTS.md
+# 对你的仓库跑一遍体检
+git clone https://github.com/alloevil/agents-with-receipts.git
+node agents-with-receipts/tools/agents-doctor/index.mjs 你的仓库/
 ```
-
-| 规则 | 级别 | 抓什么 |
-|---|---|---|
-| `max-lines` | warn | 非空行超 200——每行在每次会话都消耗上下文预算 |
-| `placeholder` | error | `TODO` / `<项目名>` 之类的模板占位符没填完就上岗 |
-| `vague` | warn | "`酌情` / `properly` / `as needed`"——agent 无法执行的措辞 |
-| `dead-script` | error | 引用了 package.json 里不存在的 npm 脚本 |
-| `empty-section` | warn | 空标题节：写了骨架没填肉 |
-
-发现 error 退出码 1，可直接进 CI（本仓库的 CI 就在用它自检）。
 
 ## 核心立场
 

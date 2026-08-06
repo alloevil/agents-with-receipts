@@ -18,9 +18,9 @@
       <rect x="246" y="212" width="220" height="40" rx="8" fill="none" stroke="#3A362F" stroke-width="1.5"/>
       <text x="264" y="238" fill="#D9D2C4">practices/ 地图</text>
       <rect x="482" y="212" width="190" height="40" rx="8" fill="none" stroke="#3A362F" stroke-width="1.5"/>
-      <text x="500" y="238" fill="#D9D2C4">agentsmd-lint</text>
+      <text x="500" y="238" fill="#D9D2C4">tools/ 三件套</text>
     </g>
-    <text y="292" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" fill="#8A8378">40 verified cells · 4 tools compared · 1 linter · MIT</text>
+    <text y="292" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" fill="#8A8378">40 verified cells · 9 chapters · 3 CLIs · MIT</text>
   </g>
 
   <!-- 右：收据小票（核心隐喻：每条断言都有可点开的凭据） -->
@@ -36,7 +36,7 @@
       <g font-size="18">
         <text x="26" y="114">01 ROSETTA X-TOOL TABLE</text><text x="358" y="114" text-anchor="end">doc✓</text>
         <text x="26" y="148">02 PRACTICES MAP</text><text x="358" y="148" text-anchor="end">doc✓</text>
-        <text x="26" y="182">03 AGENTSMD-LINT</text><text x="358" y="182" text-anchor="end">test✓</text>
+        <text x="26" y="182">03 LINT · DOCTOR · INIT</text><text x="358" y="182" text-anchor="end">test✓</text>
         <text x="26" y="216">04 AGENTS.MD TEMPLATES</text><text x="358" y="216" text-anchor="end">lint✓</text>
       </g>
 
