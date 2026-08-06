@@ -86,7 +86,7 @@ test('行内 code span 是提及不是使用：`TODO`/`酌情` 不报，围栏�
 });
 
 test('含中文 alt 的 HTML 标签不是占位符', () => {
-    const f = lint(['# t', '正文', '<img src="./a.svg" width="100%" alt="第一板块：事故案例，可点开的 commit。">'].join('\n'));
+    const f = lint(['# t', '正文', '<img src="./a.svg" width="100%" alt="第一板块：跨工具对照，每格都是官方链接。">'].join('\n'));
     assert.strictEqual(f.filter(x => x.rule === 'placeholder').length, 0);
     // 真占位符仍然要抓
     assert.strictEqual(lint(['# t', '正文', '目标是 <项目名>'].join('\n')).filter(x => x.rule === 'placeholder').length, 1);

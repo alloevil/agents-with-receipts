@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agents with Receipts · 有据可查</title>
-<meta name="description" content="事故驱动的 agentic coding 实践手册：每条实践都带可点开的 commit 证据。">
+<meta name="description" content="有据可查的 agentic coding 实践手册：逐格核实的跨工具对照表、有出处的实践地图、AGENTS.md 质量检查器。">
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 <style>
 :root {
@@ -77,7 +77,7 @@ footer a { color: var(--cream); }
 </head>
 <body>
 <div class="frame">
-  <div class="hero"><img src="assets/readme/hero.svg" alt="Agents with Receipts · 有据可查：事故驱动的 agentic coding 实践手册"></div>
+  <div class="hero"><img src="assets/readme/hero.svg" alt="Agents with Receipts · 有据可查：agentic coding 实践手册"></div>
 
   <div class="layout">
     <nav class="stubs" id="nav"></nav>
@@ -104,18 +104,10 @@ const GROUPS = [
   { label: 'START', items: [
     { no: '00', title: '这是什么', file: '_start' },
   ]},
-  { label: 'INCIDENTS · 事故案例', items: [
-    { no: 'IDX', title: '索引与格式', file: 'incidents/README.md' },
-    { no: '001', title: '猜 DOM 判登录态', file: 'incidents/001-dom-guessing-auth.md' },
-    { no: '002', title: '24h 滚动会话', file: 'incidents/002-rolling-session-expiry.md' },
-    { no: '003', title: 'stdout 当契约', file: 'incidents/003-output-parsing-contract.md' },
-    { no: '004', title: 'sed 误伤 lockfile', file: 'incidents/004-sed-version-bump.md' },
-    { no: '005', title: '过期构建产物', file: 'incidents/005-stale-build-artifact.md' },
-  ]},
   { label: 'GUIDES · 指南', items: [
-    { no: 'P', title: '实践地图（八大类）', file: 'practices/README.md' },
-    { no: 'R', title: '跨工具对照表', file: 'rosetta/README.md' },
-    { no: 'L', title: 'agentsmd-lint', file: 'tools/agentsmd-lint/README.md' },
+    { no: '01', title: '跨工具对照表', file: 'rosetta/README.md' },
+    { no: '02', title: '实践地图（八大类）', file: 'practices/README.md' },
+    { no: '03', title: 'agentsmd-lint', file: 'tools/agentsmd-lint/README.md' },
   ]},
   { label: 'TEMPLATES · 模板', items: [
     { no: 'T1', title: 'AGENTS.md 模板', file: 'templates/AGENTS.md.template', raw: true },
@@ -128,24 +120,24 @@ const GROUPS = [
 
 const START_HTML = `
 <h1>Agents with Receipts · 有据可查</h1>
-<p><strong>事故驱动的 agentic coding 实践手册。</strong>每条实践都必须回答一个问题：<em>没这么做的时候，具体发生了什么？</em>答案是可以点开的 commit，而不是口号。</p>
+<p><strong>有据可查的 agentic coding 实践手册。</strong>每条断言都必须回答一个问题：<em>出处在哪？</em>答案是可以点开的官方文档，而不是口号。</p>
 <h2>我该从哪看起？</h2>
 <table>
 <tr><th>你想做的事</th><th>从这里进</th></tr>
 <tr><td><strong>给仓库写一份 AGENTS.md / CLAUDE.md</strong></td><td><a href="#/templates/AGENTS.md.template">模板</a>起步，对照<a href="#/practices/README.md">实践地图</a>第 1 节的取舍原则</td></tr>
-<tr><td><strong>不知道该往里写什么</strong></td><td>看<a href="#/incidents/README.md">事故案例</a>每条的「沉淀」一节——条目是从踩坑里提炼的</td></tr>
+<tr><td><strong>不知道该往里写什么</strong></td><td><a href="#/practices/README.md">实践地图</a>第 1 节「只写推断不出来的」+ <a href="#/templates/AGENTS.md.template">模板</a>注释里的取舍规则</td></tr>
 <tr><td><strong>检查已有的 AGENTS.md 写得好不好</strong></td><td>跑 <a href="#/tools/agentsmd-lint/README.md">agentsmd-lint</a>，五条规则给出行号级反馈</td></tr>
-<tr><td><strong>换工具，或多工具混用</strong></td><td><a href="#/rosetta/README.md">跨工具对照表</a>：同一概念各家叫什么、放哪、坑在哪</td></tr>
+<tr><td><strong>换工具，或多工具混用</strong></td><td><a href="#/rosetta/README.md">跨工具对照表</a>：同一概念各家叫什么、放哪、就近规则差在哪</td></tr>
 <tr><td><strong>系统过一遍实践全景</strong></td><td><a href="#/practices/README.md">实践地图</a>八大类，每条断言带官方出处</td></tr>
-<tr><td><strong>踩过有意思的坑，想让别人少踩</strong></td><td><a href="#/CONTRIBUTING.md">贡献指南</a>——带上证据链来投稿</td></tr>
+<tr><td><strong>发现内容过期或有错</strong></td><td><a href="#/CONTRIBUTING.md">贡献指南</a>——带官方链接来提 PR，过期条目删除而非堆积</td></tr>
 </table>
 <h2>只有十分钟？</h2>
-<p>读 <a href="#/incidents/001-dom-guessing-auth.md">001 猜 DOM 判登录态</a> 和 <a href="#/incidents/005-stale-build-artifact.md">005 过期构建产物</a> 两条事故，然后对自己的仓库跑一次：</p>
+<p>读<a href="#/rosetta/README.md">跨工具对照表</a>的「收敛格局」和「就近规则差异」两节，然后对自己的仓库跑一次：</p>
 <pre><code>git clone ${REPO}.git
 node agents-with-receipts/tools/agentsmd-lint/index.mjs 你的仓库/AGENTS.md</code></pre>
 <h2>核心立场</h2>
 <ol>
-<li><strong>证据优先。</strong>没有事故或数据支撑的实践进不了 incidents/。</li>
+<li><strong>证据优先。</strong>没有出处的断言不收；对照表的每一格都是官方文档链接。</li>
 <li><strong>半衰期意识。</strong>这个领域几个月一变；每条标注适用工具与日期，过期即删。</li>
 <li><strong>宁缺毋滥。</strong>手册的价值密度由最差的一条决定。</li>
 <li><strong>可执行 &gt; 可读。</strong>能写成 lint 规则、模板、脚手架的实践，不要只写成散文。</li>

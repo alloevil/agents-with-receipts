@@ -1,6 +1,6 @@
 # 实践地图：八大类别
 
-带官方来源的实践总表。**这里只放有出处的断言**；有事故证据的条目升级进 [`incidents/`](../incidents/)。
+带官方来源的实践总表。**这里只放有出处的断言**，每条标注来源与验证日期。
 
 > 验证于 2026-08。来源：[agents.md 规范](https://agents.md) · [Anthropic Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices) · [Anthropic steering 指南](https://claude.com/blog/steering-claude-code-skills-hooks-rules-subagents-and-more) · [OpenAI Codex 文档](https://developers.openai.com/codex)
 
@@ -26,7 +26,7 @@
 - **Test-first**：先写测试→确认失败→commit 作检查点→让 agent 实现且**明令禁改测试**
 - 接受大改动前用独立评审（Codex `/review`；或另开会话让 agent 审自己的 diff）
 - linter / 类型检查 / 集成测试是 agent 自我纠错的前提设施，不是可选项
-- 提交后核对 `git diff --stat` 行数与预期（见 [incident 004](../incidents/004-sed-version-bump.md)）
+- 提交后核对 `git diff --stat` 行数与预期——批量替换误伤（如 lockfile 里同版本号的无关依赖）靠行数对账才能当场截获
 
 ## 4. 权限与沙箱
 
@@ -63,7 +63,7 @@
 
 - 秒级测试、一条命令跑全部检查——agent 的效率上限由仓库基建决定
 - 可读的报错信息；devcontainer 可复现环境
-- 把"改了 X 必须做 Y"做成条件规则或 CI 检查，别指望文档（见 [incident 005](../incidents/005-stale-build-artifact.md)）
+- 把"改了 X 必须做 Y"做成条件规则或 CI 检查，别指望文档——"缺失才编译"式的缓存构建最容易让改动静默失效
 
 ## 9. 安全治理
 

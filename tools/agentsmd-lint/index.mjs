@@ -2,7 +2,7 @@
 // agentsmd-lint — AGENTS.md / CLAUDE.md 质量检查器。零依赖，Node ≥ 20。
 //
 // "Treat your agent memory file like code" 的工具化落地。规则全部来自
-// 可验证的社区共识与真实事故（见仓库 incidents/ 与 practices/）：
+// 可验证的社区共识（依据见仓库 practices/）：
 //   max-lines      文件过长稀释注意力（社区共识上限 ~200 行）
 //   placeholder    模板占位符没填完就上岗（TODO/TBD/<项目名>…）
 //   vague          "酌情/适当/properly" 类不可执行措辞
