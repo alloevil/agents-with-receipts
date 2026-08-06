@@ -6,6 +6,19 @@
 
 Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是断言（"保持 CLAUDE.md 简短"、"先规划再编码"）。这里只收带证据链的条目：真实事故、可验证的修复、以及事故最终**沉淀成了哪条规则或哪个测试**。
 
+## 我该从哪看起？
+
+| 你想做的事 | 从这里进 |
+|---|---|
+| **给仓库写一份 AGENTS.md / CLAUDE.md** | [`templates/`](templates/) 骨架起步，对照 [`practices/`](practices/) 第 1 节的取舍原则 |
+| **不知道该往 AGENTS.md 里写什么** | 看 [`incidents/`](incidents/) 每条的「沉淀」一节——条目不是凭空写的，是从踩坑里提炼的 |
+| **检查已有的 AGENTS.md 写得好不好** | 跑 [`tools/agentsmd-lint`](tools/agentsmd-lint/)，五条规则给出行号级反馈 |
+| **在换工具，或 Claude Code / Codex / Cursor 混着用** | [`rosetta/`](rosetta/) 对照表：同一概念各家叫什么、放哪、坑在哪 |
+| **系统过一遍 agentic coding 的实践全景** | [`practices/`](practices/) 八大类地图，每条断言带官方出处 |
+| **踩过有意思的坑，想让别人少踩** | [CONTRIBUTING.md](CONTRIBUTING.md)——带上证据链来投稿 |
+
+只有十分钟的话：读 [001](incidents/001-dom-guessing-auth.md) 和 [005](incidents/005-stale-build-artifact.md) 两条事故，然后对自己的仓库跑一次 linter。
+
 <p align="center">
   <img src="./assets/readme/section-incidents.svg" width="100%" alt="第一板块 incidents：事故案例，症状、根因、修复、沉淀，每条都有可点开的 commit。">
 </p>
