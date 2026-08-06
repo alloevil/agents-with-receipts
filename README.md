@@ -12,10 +12,12 @@ Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是
 
 | 你想做的事 | 从这里进 |
 |---|---|
-| **给仓库写一份 AGENTS.md / CLAUDE.md** | [`templates/`](templates/) 骨架起步，对照 [`practices/`](practices/) 第 1 节的取舍原则 |
+| **第一次给仓库配 agent 基建** | 跟做 [`00 walkthrough`](practices/00-agent-ready-walkthrough.md)：AGENTS.md → 条件规则 → hook → lint 进 CI，每步可验证 |
+| **给仓库写一份 AGENTS.md / CLAUDE.md** | [`templates/`](templates/) 骨架起步，对照 [`01 Memory 文件`](practices/01-memory-files.md)的取舍原则 |
+| **不知道该用 memory 还是 rule 还是 hook** | [`02 机制选型`](practices/02-mechanism-selection.md)：两个维度定位五种机制 |
 | **检查已有的 AGENTS.md 写得好不好** | 跑 [`tools/agentsmd-lint`](tools/agentsmd-lint/)，五条规则给出行号级反馈 |
 | **在换工具，或 Claude Code / Codex / Cursor 混着用** | [`rosetta/`](rosetta/) 对照表：同一概念各家叫什么、放哪、就近规则差在哪 |
-| **系统过一遍 agentic coding 的实践全景** | [`practices/`](practices/) 八大类地图，每条断言带官方出处 |
+| **系统过一遍 agentic coding 的实践全景** | [`practices/`](practices/) 九个章节，每条实践「场景→做法→依据→边界」带官方出处 |
 | **发现内容过期或有错** | [CONTRIBUTING.md](CONTRIBUTING.md)——带官方链接来提 PR，过期条目删除而非堆积 |
 
 只有十分钟的话：读 [`rosetta/`](rosetta/) 的「收敛格局」和「就近规则差异」两节，然后对自己的仓库跑一次 linter。
@@ -36,7 +38,7 @@ ln -s AGENTS.md CLAUDE.md
   <img src="./assets/readme/section-practices.svg" width="100%" alt="第二板块 practices：实践地图，八大类实践加模板，每条断言带官方出处与验证日期。">
 </p>
 
-[`practices/`](practices/) 是八大类实践地图：memory 文件 / 提示框架 / 验证闭环 / 权限沙箱 / 机制选型 / 上下文管理 / 并行编排 / 安全治理——**只放有出处的断言**，每条标注来源与验证日期，过期即删。
+[`practices/`](practices/) 是九个章节的实践手册：[00 可跟做的 walkthrough](practices/00-agent-ready-walkthrough.md)（从零配齐 agent 基建）+ 01-08 章（Memory 文件 / 机制选型 / 任务框架 / 验证闭环 / 权限沙箱 / 上下文管理 / 并行编排 / 安全治理）。每条实践按「**场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界**」展开——不是要点索引，是能照着做完的工作流。
 
 配套 [`templates/`](templates/)：从真实项目提炼的 `AGENTS.md` / `RULES.md` 骨架，注释里写明用法，和下面的 linter 配合使用。
 

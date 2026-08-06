@@ -104,10 +104,23 @@ const GROUPS = [
   { label: 'START', items: [
     { no: '00', title: '这是什么', file: '_start' },
   ]},
-  { label: 'GUIDES · 指南', items: [
-    { no: '01', title: '跨工具对照表', file: 'rosetta/README.md' },
-    { no: '02', title: '实践地图（八大类）', file: 'practices/README.md' },
-    { no: '03', title: 'agentsmd-lint', file: 'tools/agentsmd-lint/README.md' },
+  { label: 'ROSETTA · 对照', items: [
+    { no: 'R', title: '跨工具对照表', file: 'rosetta/README.md' },
+  ]},
+  { label: 'PRACTICES · 实践', items: [
+    { no: 'IDX', title: '章节索引', file: 'practices/README.md' },
+    { no: '00', title: '从零配齐（可跟做）', file: 'practices/00-agent-ready-walkthrough.md' },
+    { no: '01', title: 'Memory 文件', file: 'practices/01-memory-files.md' },
+    { no: '02', title: '机制选型', file: 'practices/02-mechanism-selection.md' },
+    { no: '03', title: '任务框架与规划', file: 'practices/03-task-framing.md' },
+    { no: '04', title: '验证闭环', file: 'practices/04-verification.md' },
+    { no: '05', title: '权限与沙箱', file: 'practices/05-permissions-sandbox.md' },
+    { no: '06', title: '上下文管理', file: 'practices/06-context-management.md' },
+    { no: '07', title: '并行与编排', file: 'practices/07-parallel-orchestration.md' },
+    { no: '08', title: '安全与治理', file: 'practices/08-security-governance.md' },
+  ]},
+  { label: 'TOOLS · 工具', items: [
+    { no: 'L', title: 'agentsmd-lint', file: 'tools/agentsmd-lint/README.md' },
   ]},
   { label: 'TEMPLATES · 模板', items: [
     { no: 'T1', title: 'AGENTS.md 模板', file: 'templates/AGENTS.md.template', raw: true },
@@ -124,11 +137,12 @@ const START_HTML = `
 <h2>我该从哪看起？</h2>
 <table>
 <tr><th>你想做的事</th><th>从这里进</th></tr>
-<tr><td><strong>给仓库写一份 AGENTS.md / CLAUDE.md</strong></td><td><a href="#/templates/AGENTS.md.template">模板</a>起步，对照<a href="#/practices/README.md">实践地图</a>第 1 节的取舍原则</td></tr>
-<tr><td><strong>不知道该往里写什么</strong></td><td><a href="#/practices/README.md">实践地图</a>第 1 节「只写推断不出来的」+ <a href="#/templates/AGENTS.md.template">模板</a>注释里的取舍规则</td></tr>
+<tr><td><strong>第一次给仓库配 agent 基建</strong></td><td>跟做 <a href="#/practices/00-agent-ready-walkthrough.md">00 walkthrough</a>：AGENTS.md → 条件规则 → hook → lint 进 CI，每步可验证</td></tr>
+<tr><td><strong>给仓库写一份 AGENTS.md / CLAUDE.md</strong></td><td><a href="#/templates/AGENTS.md.template">模板</a>起步，对照 <a href="#/practices/01-memory-files.md">01 Memory 文件</a>的取舍原则</td></tr>
+<tr><td><strong>不知道该用 memory 还是 rule 还是 hook</strong></td><td><a href="#/practices/02-mechanism-selection.md">02 机制选型</a>：两个维度定位五种机制</td></tr>
 <tr><td><strong>检查已有的 AGENTS.md 写得好不好</strong></td><td>跑 <a href="#/tools/agentsmd-lint/README.md">agentsmd-lint</a>，五条规则给出行号级反馈</td></tr>
 <tr><td><strong>换工具，或多工具混用</strong></td><td><a href="#/rosetta/README.md">跨工具对照表</a>：同一概念各家叫什么、放哪、就近规则差在哪</td></tr>
-<tr><td><strong>系统过一遍实践全景</strong></td><td><a href="#/practices/README.md">实践地图</a>八大类，每条断言带官方出处</td></tr>
+<tr><td><strong>系统过一遍实践全景</strong></td><td><a href="#/practices/README.md">实践地图</a>九个章节，每条实践带官方出处</td></tr>
 <tr><td><strong>发现内容过期或有错</strong></td><td><a href="#/CONTRIBUTING.md">贡献指南</a>——带官方链接来提 PR，过期条目删除而非堆积</td></tr>
 </table>
 <h2>只有十分钟？</h2>

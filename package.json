@@ -8,6 +8,6 @@
   "bin": { "agentsmd-lint": "tools/agentsmd-lint/index.mjs" },
   "scripts": {
     "test": "node --test",
-    "lint:self": "node tools/agentsmd-lint/index.mjs README.md practices/README.md rosetta/README.md"
+    "lint:self": "node tools/agentsmd-lint/index.mjs README.md rosetta/README.md practices/*.md"
   }
 }
