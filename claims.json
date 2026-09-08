@@ -1,0 +1,68 @@
+{
+  "project": "agents-with-receipts",
+  "url": "https://alloevil.github.io/agents-with-receipts/",
+  "repository": "https://github.com/alloevil/agents-with-receipts",
+  "updated": "2026-09-08",
+  "claims": [
+    {
+      "id": "rosetta-cells-all-sourced",
+      "claim": "Every cell of the cross-tool comparison table is a link to official vendor documentation.",
+      "value": "40/40",
+      "metric": "cells in the main table of rosetta/README.md that contain an official-documentation link, out of total cells",
+      "method": "The main table has 10 concept rows and 4 tool columns, giving 40 cells; counting Markdown links to external URLs inside those rows yields 40. Cell contents were verified against vendor docs in 2026-08 by the repository author.",
+      "repro": "python3 -c \"import re;m=open('rosetta/README.md').read().split('## 主对照表')[1].split('## 2026-08')[0];rows=[l for l in m.splitlines() if l.startswith('| **')];print(sum(len(l.strip().strip('|').split('|'))-1 for l in rows), len(re.findall(r'\\]\\(https?://', m)))\"",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/rosetta/README.md",
+      "verified": "2026-09-08"
+    },
+    {
+      "id": "zero-dependencies",
+      "claim": "The three CLI tools have no runtime and no development dependencies.",
+      "value": "0",
+      "metric": "count of entries under dependencies plus devDependencies in package.json",
+      "method": "package.json declares neither a dependencies nor a devDependencies key; the tools are single-file Node ESM scripts using only the standard library.",
+      "repro": "node -e \"const p=require('./package.json');console.log(Object.keys(p.dependencies||{}).length+Object.keys(p.devDependencies||{}).length)\"",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/package.json",
+      "verified": "2026-09-08"
+    },
+    {
+      "id": "cli-tool-count",
+      "claim": "The repository ships three executable CLI tools.",
+      "value": "3",
+      "metric": "count of bin entries in package.json",
+      "method": "package.json bin declares agentsmd-lint, agents-doctor and agents-init, each pointing at an existing tools/<name>/index.mjs.",
+      "repro": "node -e \"console.log(Object.keys(require('./package.json').bin).length)\"",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/tree/main/tools",
+      "verified": "2026-09-08"
+    },
+    {
+      "id": "agentsmd-lint-rule-count",
+      "claim": "agentsmd-lint enforces five rules against a memory file.",
+      "value": "5",
+      "metric": "distinct rule identifiers implemented in tools/agentsmd-lint/index.mjs",
+      "method": "The rule ids max-lines, placeholder, vague, dead-script and empty-section appear in both the implementation and the tool's documented rule table.",
+      "repro": "node -e \"const s=require('fs').readFileSync('tools/agentsmd-lint/index.mjs','utf8');console.log(['max-lines','placeholder','vague','dead-script','empty-section'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/tools/agentsmd-lint/README.md",
+      "verified": "2026-09-08"
+    },
+    {
+      "id": "agents-doctor-check-count",
+      "claim": "agents-doctor runs seven checks over a repository's agent infrastructure.",
+      "value": "7",
+      "metric": "distinct check identifiers implemented in tools/agents-doctor/index.mjs",
+      "method": "The check ids agents-md, claude-md, rules, hooks, skills, secrets and ci-gate appear in both the implementation and the tool's documented check table.",
+      "repro": "node -e \"const s=require('fs').readFileSync('tools/agents-doctor/index.mjs','utf8');console.log(['agents-md','claude-md','rules','hooks','skills','secrets','ci-gate'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/tools/agents-doctor/README.md",
+      "verified": "2026-09-08"
+    },
+    {
+      "id": "practice-chapter-count",
+      "claim": "The practices handbook has nine chapters, excluding its index.",
+      "value": "9",
+      "metric": "Markdown files under practices/ other than README.md",
+      "method": "Directory listing: 00-agent-ready-walkthrough plus chapters 01 through 08.",
+      "repro": "ls practices/*.md | grep -v README | wc -l",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/tree/main/practices",
+      "verified": "2026-09-08"
+    }
+  ]
+}
