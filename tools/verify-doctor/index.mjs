@@ -6,11 +6,16 @@
 //   determinism        阶段 1  测试无硬等待 / 真实时钟 / 真实网络，验证命令固定 TZ
 //   failure-artifacts  阶段 2  CI 有机器可解析报告 + if: always() 的证据 artifact
 //   module-boundary    阶段 3  模块与依赖边界有机械约束（结构层 > 机械层）
-//   type-strict        阶段 3  tsconfig 的 strict 与 noUncheckedIndexedAccess
-//   lint-hardness      阶段 3  lint 规则是 error 不是 warn、--max-warnings=0、生成物 drift 门
-//   escape-ratchet     阶段 3  eslint-disable / ts-ignore / any 的数量被棘轮监控
+//   type-strict        阶段 3  类型层的逃逸口是否封死（TS strict / mypy·pyright strict）
+//   lint-hardness      阶段 3  lint 规则是 error 不是 warn、警告零容忍、生成物 drift 门
+//   escape-ratchet     阶段 3  各生态的逃逸口（disable / ignore / any / unwrap / nolint）被棘轮监控
 //   flaky-quarantine   阶段 5  .only 零容忍，skip 有 FLAKY 标注、未过期、进清单，retry 不掩盖 flaky
 //   evidence-template  阶段 4  PR 模板强制复现命令与证据
+//
+// 五个技术栈各自实现探测（见 STACK_IDS）：JS/TS · Python · Go · Rust · Java/Kotlin。
+// 最高优先的设计规则——**绿灯必须有信息量**：某个检查在当前仓库无可检之物时一律报 info
+// 并写明「不适用：<原因>」，绝不报 ok。ok 只表示「检查过了，确实干净」。对一个没有 JS 的
+// 仓库报「无 ts-ignore」是绿灯零信息量，与「warn 等于不存在」是同一种失效模式。
 //
 // 退出码：只有 error 级导致 exit 1。阶段门缺口默认 warn，`--strict` 把 warn 升成 error。
 // `--baseline` 写 `.verify-baseline.json` 立棘轮基线；默认模式只校验，不写文件。
@@ -24,8 +29,44 @@ import { renderJson } from '../agentsmd-lint/index.mjs';
 /** 棘轮基线文件名。 */
 const BASELINE_FILE = '.verify-baseline.json';
 
-/** 测试文件路径判定（tests/spec/__tests__/e2e 目录，或 *.test.* / *_test.go / test_*.py 命名）。 */
+/** 支持的技术栈标记：测试识别与逃逸口统计按生态分别实现。 */
+export const STACK_IDS = ['js-ts', 'python', 'go', 'rust', 'java-kotlin'];
+
+/** 技术栈显示名，与 tools/verify-doctor/README.md 的覆盖表逐字一致。 */
+const STACK_LABELS = {
+    'js-ts': 'JS/TS',
+    python: 'Python',
+    go: 'Go',
+    rust: 'Rust',
+    'java-kotlin': 'Java/Kotlin',
+};
+
+/** 各技术栈的源文件扩展名。 */
+const STACK_FILE_RE = {
+    'js-ts': /\.[cm]?[jt]sx?$/,
+    python: /\.py$/,
+    go: /\.go$/,
+    rust: /\.rs$/,
+    'java-kotlin': /\.(java|kt)$/,
+};
+
+/** 五个栈的显示名连成一句，供「不适用」文案用。 */
+const ALL_STACK_LABELS = STACK_IDS.map(s => STACK_LABELS[s]).join('、');
+
+/**
+ * 测试文件路径判定（tests/spec/__tests__/e2e 目录，或 *.test.* / *_test.go / test_*.py 命名）。
+ * Maven/Gradle 的 `src/test/java/**`、`src/test/kotlin/**` 由 `tests?/` 这一分支覆盖。
+ */
 const TEST_RE = /(^|\/)(tests?|spec|__tests__|e2e)\/|\.(test|spec)\.[cm]?[jt]sx?$|_test\.go$|(^|\/)test_[^/]*\.py$|[^/]*_test\.py$/;
+
+/**
+ * 测试文件内容判定：Rust 与 Java/Kotlin 的主流约定是测试内联在源文件里，
+ * 只按路径认测试会把这类仓库判成「零测试」——本工具最初就是这么错的。
+ */
+const STACK_TEST_CONTENT_RE = {
+    rust: /#\[(?:\w+::)?test\]|#\[cfg\(test\)\]/,
+    'java-kotlin': /@(?:Parameterized)?Test\b/,
+};
 
 /** 源文件扩展名判定。 */
 const CODE_RE = /\.([cm]?[jt]sx?|go|py|rs|java|kt|rb|swift)$/;
@@ -33,24 +74,72 @@ const CODE_RE = /\.([cm]?[jt]sx?|go|py|rs|java|kt|rb|swift)$/;
 /** 验证命令的落脚处：任务运行器、package.json scripts、CI workflow。 */
 const RUNNER_RE = /(^|\/)([Jj]ustfile|[Mm]akefile|Taskfile\.ya?ml|package\.json)$|^\.github\/workflows\//;
 
+/**
+ * 各生态的约定验证入口：清单文件 → 该生态里人人都知道的命令。
+ * 没有 justfile 不等于「agent 不知道怎么跑」——有 Cargo.toml 就等于有 `cargo test`。
+ */
+const CONVENTIONAL_ENTRIES = [
+    { re: /(^|\/)Cargo\.toml$/, commands: 'cargo test / cargo clippy', doc: 'https://doc.rust-lang.org/cargo/commands/cargo-test.html' },
+    { re: /(^|\/)go\.mod$/, commands: 'go test ./...', doc: 'https://pkg.go.dev/cmd/go#hdr-Test_packages' },
+    { re: /(^|\/)(pyproject\.toml|tox\.ini|noxfile\.py)$/, commands: 'pytest / tox / nox', doc: 'https://tox.wiki/en/stable/' },
+    { re: /(^|\/)pom\.xml$/, commands: 'mvn test', doc: 'https://maven.apache.org/guides/introduction/introduction-to-the-pom.html' },
+    { re: /(^|\/)build\.gradle(\.kts)?$/, commands: 'gradle test', doc: 'https://docs.gradle.org/current/userguide/multi_project_builds.html' },
+];
+
 /** 依赖清单：判断 mock 框架、betterer 这类工具是否被采用。 */
 const MANIFEST_RE = /(^|\/)(package\.json|pyproject\.toml|requirements[^/]*\.txt|Gemfile|go\.mod)$/;
 
 /** 递归兜底时跳过的目录。 */
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'vendor']);
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'vendor', 'target']);
 
 /**
  * 棘轮受控指标：每一项都是「agent 会用来刷绿的手段」，只允许下降。
+ * `res` 按技术栈分别给正则，只有仓库真的有该栈源码时才统计——对没有 JS 的仓库
+ * 报「无 ts-ignore」是零信息量的绿灯。
  * 两条注释型指令要求前面有注释起始符（真正的 disable 指令必然是注释），
  * 顺带把散文里提到的 eslint-disable 排除掉；`an[y]` 的字符类同理防自匹配。
  */
 const RATCHET_METRICS = [
-    { key: 'eslint_disable', scope: 'src', label: 'eslint-disable', re: /(?:\/\/|\/\*|<!--|#)\s*eslint-disable/g },
-    { key: 'ts_ignore', scope: 'src', label: 'ts-ignore/expect-error', re: /(?:\/\/|\/\*|<!--)\s*@ts-(?:expect-error|ignore)/g },
-    { key: 'any_type', scope: 'src', label: 'any', re: /(?::[ \t]*an[y]\b|\bas an[y]\b)/g },
-    { key: 'test_skip', scope: 'tests', label: 'skip', re: /\.skip\(|@pytest\.mark\.skip|t\.Skip\(|xit\(|xdescribe\(/g },
-    { key: 'test_only', scope: 'tests', label: 'only', re: /\.only\(|\bfit\(|fdescribe\(/g },
+    { key: 'eslint_disable', scope: 'src', label: 'eslint-disable', res: { 'js-ts': /(?:\/\/|\/\*|<!--|#)\s*eslint-disable/g } },
+    { key: 'ts_ignore', scope: 'src', label: 'ts-ignore/expect-error', res: { 'js-ts': /(?:\/\/|\/\*|<!--)\s*@ts-(?:expect-error|ignore)/g } },
+    { key: 'any_type', scope: 'src', label: 'any', res: { 'js-ts': /(?::[ \t]*an[y]\b|\bas an[y]\b)/g } },
+    { key: 'py_type_ignore', scope: 'src', label: 'type-ignore/noqa', res: { python: /#\s*type:\s*ignore|#\s*noqa/g } },
+    { key: 'go_nolint', scope: 'src', label: 'nolint', res: { go: /\/\/\s*nolint/g } },
+    { key: 'rust_unwrap', scope: 'src', label: 'unwrap/expect', res: { rust: /\.unwrap\(\)|\.expect\(/g } },
+    { key: 'rust_unsafe', scope: 'src', label: 'unsafe', res: { rust: /\bunsafe\s/g } },
+    { key: 'rust_allow', scope: 'src', label: 'allow 属性', res: { rust: /#\[allow\(/g } },
+    { key: 'java_suppress', scope: 'src', label: 'SuppressWarnings', res: { 'java-kotlin': /@SuppressWarnings/g } },
+    {
+        key: 'test_skip', scope: 'tests', label: 'skip', res: {
+            // xit/xdescribe 要 \b：否则 exit( 这类普通调用会被算成隔离测试
+            'js-ts': /\.skip\(|\bxit\(|\bxdescribe\(/g,
+            python: /@pytest\.mark\.skip/g,
+            go: /t\.Skip\(/g,
+            rust: /#\[ignore\b/g,
+            'java-kotlin': /@Disabled\b|@Ignore\b/g,
+        },
+    },
+    // 独占执行是 JS/TS 特有形态：pytest / go test / cargo test 都没有这个概念
+    { key: 'test_only', scope: 'tests', label: 'only', res: { 'js-ts': /\.only\(|\bfit\(|\bfdescribe\(/g } },
 ];
+
+/** 各栈的硬等待形态（固定时长 sleep，flaky 头号来源）。 */
+const HARD_WAIT_RE = {
+    'js-ts': /(?:sleep|waitForTimeout)\(\d{3,}/g,
+    python: /time\.sleep\(\d/g,
+    go: /time\.Sleep\(/g,
+    rust: /thread::sleep/g,
+    'java-kotlin': /Thread\.sleep\(/g,
+};
+
+/** 各栈的真实时钟与随机源。 */
+const NON_DET_RE = {
+    'js-ts': /Math\.random|Date\.now|new Date\(\)|uuid4?\(\)/g,
+    python: /time\.time\(\)|uuid4?\(\)/g,
+    go: /time\.Now\(|math\/rand/g,
+    rust: /SystemTime::now|Instant::now|rand::/g,
+    'java-kotlin': /new Date\(\)|new Random\(/g,
+};
 
 /** 阶段小标题，报告按 stage 分组输出。 */
 const STAGE_TITLES = [
@@ -102,14 +191,11 @@ export function listFiles(root) {
 }
 
 /**
- * 一次体检共享的上下文：文件清单 + 带缓存的读取与计数。
+ * 一次体检共享的上下文：文件清单 + 技术栈识别 + 带缓存的读取与计数。
  * @param {string} root 仓库根目录绝对路径
  */
 function createContext(root) {
     const files = listFiles(root);
-    const code = files.filter(f => CODE_RE.test(f));
-    const tests = code.filter(f => TEST_RE.test(f));
-    const srcs = code.filter(f => !TEST_RE.test(f));
     const cache = new Map();
 
     /** 读文件文本，失败或二进制读不出时返回空串。 */
@@ -124,6 +210,20 @@ function createContext(root) {
         cache.set(rel, text);
         return text;
     };
+
+    const code = files.filter(f => CODE_RE.test(f));
+    const stacks = STACK_IDS.filter(s => code.some(f => STACK_FILE_RE[s].test(f)));
+
+    /** 路径规则 + 内容探测双路：Rust / Java 的测试常内联在源文件里。 */
+    const isTest = rel => {
+        if (TEST_RE.test(rel)) return true;
+        const stack = STACK_IDS.find(s => STACK_FILE_RE[s].test(rel));
+        const contentRe = stack ? STACK_TEST_CONTENT_RE[stack] : undefined;
+        return contentRe ? contentRe.test(read(rel)) : false;
+    };
+    const tests = code.filter(isTest);
+    // 同一个文件既是源又是测试是 Rust 的常态：两个集合都要收它，否则逃逸口统计会漏掉整个仓库
+    const srcs = code.filter(f => !TEST_RE.test(f));
 
     /** 文件清单里是否有路径匹配 re 的文件。 */
     const has = re => files.some(f => re.test(f));
@@ -141,10 +241,30 @@ function createContext(root) {
         return n;
     };
 
+    const stackCache = new Map();
+
+    /** 某个技术栈在 scope（'src' | 'tests'）里的文件子集。 */
+    const stackFiles = (stack, scope) => {
+        const key = `${stack}|${scope}`;
+        let list = stackCache.get(key);
+        if (!list) {
+            list = (scope === 'tests' ? tests : srcs).filter(f => STACK_FILE_RE[stack].test(f));
+            stackCache.set(key, list);
+        }
+        return list;
+    };
+
+    /** 按技术栈分别用 reMap[stack] 统计命中次数，只算仓库里真的存在的栈。 */
+    const countByStack = (scope, reMap) => {
+        let n = 0;
+        for (const stack of stacks) if (reMap[stack]) n += count(stackFiles(stack, scope), reMap[stack]);
+        return n;
+    };
+
     /** 路径匹配 fileRe 的任一文件内容命中 contentRe。 */
     const inAny = (fileRe, contentRe) => pick(fileRe).some(rel => contentRe.test(read(rel)));
 
-    return { root, files, tests, srcs, read, has, pick, count, inAny };
+    return { root, files, stacks, tests, srcs, read, has, pick, count, stackFiles, countByStack, inAny };
 }
 
 /**
@@ -162,6 +282,11 @@ function fold(id, stage, findings) {
     return result;
 }
 
+/** 仓库识别到的技术栈显示名，一个都没有时返回 null。 */
+function stackSummary(ctx) {
+    return ctx.stacks.length > 0 ? ctx.stacks.map(s => STACK_LABELS[s]).join('、') : null;
+}
+
 /** 阶段 0：单命令起应用 + 单命令跑全量验证。 */
 function checkVerifyCommand(ctx) {
     const findings = [];
@@ -171,15 +296,34 @@ function checkVerifyCommand(ctx) {
         ['task', /(^|\/)Taskfile\.ya?ml$/],
     ].filter(([, re]) => ctx.has(re)).map(([name]) => name);
     const hasPkg = ctx.has(/(^|\/)package\.json$/);
+    // 生态约定入口：报告里必须先说清识别到了什么，再谈缺什么
+    const entries = CONVENTIONAL_ENTRIES
+        .map(e => {
+            const file = ctx.pick(e.re)[0];
+            return file ? { name: file.split('/').pop(), commands: e.commands, doc: e.doc } : null;
+        })
+        .filter(Boolean);
 
     if (runners.length > 0) {
         findings.push({ level: 'ok', message: `有任务运行器：${runners.join('、')}` });
-    } else if (hasPkg) {
-        findings.push({ level: 'info', message: '无 justfile/Makefile/Taskfile，验证入口只能靠 package.json scripts' });
+    } else if (hasPkg || entries.length > 0) {
+        const known = [
+            ...(hasPkg ? ['package.json scripts'] : []),
+            ...entries.map(e => `${e.name}（${e.commands}）`),
+        ].join('、');
+        if (hasPkg) {
+            findings.push({ level: 'info', message: `无 justfile/Makefile/Taskfile，验证入口只能靠：${known}` });
+        } else {
+            findings.push({
+                level: 'warn',
+                message: `识别到生态约定入口：${known}，但没有一条命令跑完全部检查，agent 得自己拼`,
+                advice: `加 justfile 把 ${entries[0].commands} 收成一条 check（https://just.systems/man/en/ · ${entries[0].doc}）`,
+            });
+        }
     } else {
         findings.push({
             level: 'warn',
-            message: '没有任何任务运行器或 scripts 入口，agent 得自己猜怎么跑',
+            message: '没有任务运行器、生态清单（Cargo.toml/go.mod/pyproject.toml/pom.xml/build.gradle）或 scripts 入口，agent 得自己猜怎么跑',
             advice: '加 justfile，至少定义 dev / check 两条（https://just.systems/man/en/）',
         });
     }
@@ -209,31 +353,44 @@ function checkVerifyCommand(ctx) {
     if (ctx.tests.length === 0) {
         findings.push({
             level: 'warn',
-            message: '未发现测试文件，验证回路不存在',
+            message: '未发现测试文件（路径与内联测试属性双路都没命中），验证回路不存在',
             advice: '先为核心路径加冒烟测试，否则后面几个阶段都无从谈起',
         });
     } else {
-        findings.push({ level: 'ok', message: `源文件 ${ctx.srcs.length} 个 · 测试文件 ${ctx.tests.length} 个` });
+        const stackText = stackSummary(ctx);
+        findings.push({
+            level: 'ok',
+            message: `${stackText ? `技术栈 ${stackText} · ` : ''}源文件 ${ctx.srcs.length} 个 · 测试文件 ${ctx.tests.length} 个`,
+        });
     }
     return fold('verify-command', 0, findings);
 }
 
-/** 阶段 1：验证确定性——硬等待、真实时钟与随机、真实网络、时区。 */
+/**
+ * 阶段 1：验证确定性——硬等待、真实时钟与随机、真实网络、时区。
+ * 测试文件不属于受支持的 5 个技术栈时（Ruby / Swift / C++ …）报 info「不适用」：
+ * 一条探针都没有还说「测试无硬等待」，是零信息量的绿灯。
+ */
 function checkDeterminism(ctx) {
     const findings = [];
-    if (ctx.tests.length > 0) {
-        const hardWait = ctx.count(ctx.tests, /(?:sleep|waitForTimeout)\(\d{3,}|time\.sleep\(\d/g);
+    if (ctx.tests.length > 0 && ctx.stacks.length === 0) {
+        findings.push({
+            level: 'info',
+            message: `不适用：${ctx.tests.length} 个测试文件都不属于 ${ALL_STACK_LABELS}，没有硬等待/时钟/网络的探针可用`,
+        });
+    } else if (ctx.tests.length > 0) {
+        const hardWait = ctx.countByStack('tests', HARD_WAIT_RE);
         if (hardWait > 0) {
             findings.push({
                 level: 'warn',
-                message: `测试里硬等待 ${hardWait} 处（固定毫秒 sleep/waitForTimeout）`,
-                advice: '改条件等待 waitFor(cond)，硬等待是 flaky 头号来源（https://playwright.dev/docs/api/class-page#page-wait-for-timeout）',
+                message: `测试里硬等待 ${hardWait} 处（固定时长 sleep/waitForTimeout）`,
+                advice: '改条件等待 waitFor(cond)，硬等待是 flaky 头号来源（https://playwright.dev/docs/api/class-page#page-wait-for-timeout · https://doc.rust-lang.org/std/thread/fn.sleep.html）',
             });
         } else {
             findings.push({ level: 'ok', message: '测试无硬等待' });
         }
 
-        const nonDet = ctx.count(ctx.tests, /Math\.random|Date\.now|new Date\(\)|time\.time\(\)|uuid4?\(\)/g);
+        const nonDet = ctx.countByStack('tests', NON_DET_RE);
         if (nonDet > 0) {
             findings.push({
                 level: 'warn',
@@ -244,8 +401,8 @@ function checkDeterminism(ctx) {
             findings.push({ level: 'ok', message: '测试无真实时间/随机源' });
         }
 
-        const net = ctx.count(ctx.tests, /fetch\(|axios\.|requests\.(get|post)|http\.get/g);
-        const MOCK_RE = /msw|nock|vcr|responses|httpretty|mock-server|undici[^\n]*MockAgent|httpmock/;
+        const net = ctx.count(ctx.tests, /fetch\(|axios\.|requests\.(get|post)|http\.get|reqwest::/g);
+        const MOCK_RE = /msw|nock|vcr|responses|httpretty|mock-server|undici[^\n]*MockAgent|httpmock|wiremock/;
         const mocked = ctx.inAny(MANIFEST_RE, MOCK_RE) || ctx.tests.some(f => MOCK_RE.test(ctx.read(f)));
         if (net > 0 && !mocked) {
             findings.push({
@@ -318,7 +475,7 @@ function checkFailureArtifacts(ctx) {
 
 /** 阶段 3 结构层：模块与依赖边界，报告命中的最强一档。 */
 function checkModuleBoundary(ctx) {
-    const hasGo = ctx.srcs.some(f => f.endsWith('.go'));
+    const hasGo = ctx.stacks.includes('go');
     // 从强到弱：物理包边界 > 编译器隔离 > 依赖检查器 > lint 规则
     const tiers = [
         {
@@ -326,8 +483,24 @@ function checkModuleBoundary(ctx) {
             message: 'monorepo workspaces（物理包边界，最强一档）',
         },
         {
+            hit: () => ctx.inAny(/(^|\/)Cargo\.toml$/, /\[workspace\][\s\S]*?members\s*=/),
+            message: 'Cargo workspace 多 crate 物理边界（https://doc.rust-lang.org/cargo/reference/workspaces.html）',
+        },
+        {
+            hit: () => ctx.inAny(/(^|\/)pom\.xml$/, /<modules>/),
+            message: 'Maven 多模块物理边界（https://maven.apache.org/guides/introduction/introduction-to-the-pom.html）',
+        },
+        {
+            hit: () => ctx.inAny(/(^|\/)settings\.gradle(\.kts)?$/, /include[( ]/),
+            message: 'Gradle 多项目物理边界（https://docs.gradle.org/current/userguide/multi_project_builds.html）',
+        },
+        {
             hit: () => hasGo && ctx.has(/(^|\/)internal\//),
             message: 'Go internal/ 编译器级隔离（https://pkg.go.dev/cmd/go#hdr-Internal_Directories）',
+        },
+        {
+            hit: () => ctx.countByStack('src', { rust: /\bpub\(crate\)/g }) >= 3,
+            message: 'Rust pub(crate) 可见性收敛（编译器级，https://doc.rust-lang.org/reference/visibility-and-privacy.html）',
         },
         {
             hit: () => ctx.has(/(^|\/)\.dependency-cruiser\.(json|jsonc|js|cjs|mjs)$/),
@@ -353,22 +526,22 @@ function checkModuleBoundary(ctx) {
     return fold('module-boundary', 3, [{
         level: 'warn',
         message: '无任何模块/依赖边界约束，跨层引用不会失败',
-        advice: '先加 dependency-cruiser 禁跨 feature、禁环（https://github.com/sverweij/dependency-cruiser），能拆包就直接拆 workspaces（https://docs.npmjs.com/cli/v11/using-npm/workspaces）',
+        advice: '先加 dependency-cruiser 禁跨 feature、禁环（https://github.com/sverweij/dependency-cruiser），能拆包就直接拆 workspaces（https://docs.npmjs.com/cli/v11/using-npm/workspaces）；Rust 拆 workspace crate、Java 拆 Maven module 同理',
     }]);
 }
 
-/** 阶段 3 类型层：tsconfig 的逃逸口是否封死。 */
-function checkTypeStrict(ctx) {
+/** TS 类型层子结论：tsconfig 的逃逸口是否封死。 */
+function tsTypeFindings(ctx) {
     if (!ctx.has(/(^|\/)tsconfig\.json$/)) {
         const hasTs = ctx.srcs.some(f => /\.[cm]?tsx?$/.test(f));
-        return fold('type-strict', 3, [hasTs
+        return [hasTs
             ? {
                 level: 'warn',
                 message: '有 TS 源码但没有 tsconfig.json，类型层完全没设门',
                 advice: '加 tsconfig.json 并开 strict（https://www.typescriptlang.org/tsconfig/#strict）',
             }
             : { level: 'info', message: '无 tsconfig.json，跳过类型层检查' },
-        ]);
+        ];
     }
     const tsconfigPath = ctx.files.find(f => /(^|\/)tsconfig\.json$/.test(f));
     const ts = ctx.read(tsconfigPath);
@@ -391,37 +564,153 @@ function checkTypeStrict(ctx) {
             advice: '数组/索引访问的 undefined 漏洞靠它挡（https://www.typescriptlang.org/tsconfig/#noUncheckedIndexedAccess）',
         });
     }
+    return findings;
+}
+
+/** Python 类型层子结论：mypy / pyright 是否存在且开到 strict。 */
+function pyTypeFindings(ctx) {
+    const PY_TYPE_FILE_RE = /(^|\/)(mypy\.ini|\.mypy\.ini|setup\.cfg|pyproject\.toml|pyrightconfig\.json|tox\.ini)$/;
+    const CHECKER_RE = /\bmypy\b|pyright/i;
+    const hasChecker = ctx.inAny(PY_TYPE_FILE_RE, CHECKER_RE) || ctx.inAny(RUNNER_RE, CHECKER_RE);
+    if (!hasChecker) {
+        return [{
+            level: 'warn',
+            message: '有 Python 源码但没有 mypy/pyright 配置，类型层完全没设门',
+            advice: '加 mypy 并开 --strict（https://mypy.readthedocs.io/en/stable/command_line.html），或用 pyright 的 typeCheckingMode: strict（https://microsoft.github.io/pyright/#/configuration）',
+        }];
+    }
+    const strictOn = ctx.inAny(PY_TYPE_FILE_RE, /strict\s*=\s*[Tt]rue|"?typeCheckingMode"?\s*[:=]\s*"strict"/)
+        || ctx.inAny(RUNNER_RE, /mypy[^\n]*--strict/);
+    return [strictOn
+        ? { level: 'ok', message: 'Python 类型检查已开 strict（mypy/pyright）' }
+        : {
+            level: 'warn',
+            message: '有 mypy/pyright 但未开 strict，未标注的函数体不会被检查',
+            advice: 'mypy 开 strict = true（https://mypy.readthedocs.io/en/stable/command_line.html），pyright 开 typeCheckingMode: strict（https://microsoft.github.io/pyright/#/configuration）',
+        },
+    ];
+}
+
+/**
+ * 阶段 3 类型层：类型逃逸口是否封死。
+ * 只有 JS/TS 与 Python 有独立的「类型严格度」配置层；Go/Rust/Java 的类型由编译器强制，
+ * 该栈没有可查的类型配置时报 info「不适用」，绝不用 ok 冒充。
+ */
+function checkTypeStrict(ctx) {
+    const findings = [];
+    if (ctx.stacks.includes('js-ts') || ctx.has(/(^|\/)tsconfig\.json$/)) findings.push(...tsTypeFindings(ctx));
+    if (ctx.stacks.includes('python')) findings.push(...pyTypeFindings(ctx));
+    if (findings.length === 0) {
+        const stackText = stackSummary(ctx);
+        return fold('type-strict', 3, [{
+            level: 'info',
+            message: stackText
+                ? `不适用：${stackText} 的类型由编译器强制，没有独立的类型严格度配置可查（clippy / -Werror 归 lint-hardness）`
+                : `不适用：未识别到 ${ALL_STACK_LABELS} 任一技术栈的源码`,
+        }]);
+    }
     return fold('type-strict', 3, findings);
 }
 
-/** 阶段 3 机械层：lint 规则硬度、--max-warnings=0、生成物 drift 门。 */
-function checkLintHardness(ctx) {
-    const findings = [];
+/** eslint 子结论：规则档位与 --max-warnings=0。 */
+function eslintFindings(ctx) {
     const ESLINT_FILE_RE = /(^|\/)eslint\.config\.[cm]?[jt]s$|(^|\/)\.eslintrc(\.[a-z]+)?$/;
     const configs = ctx.pick(ESLINT_FILE_RE).slice(0, 5);
-    if (configs.length === 0) {
-        findings.push({ level: 'info', message: '无 eslint 配置，跳过 lint 硬度检查' });
+    if (configs.length === 0) return [{ level: 'info', message: '无 eslint 配置，跳过 lint 硬度检查' }];
+    const findings = [];
+    const warns = ctx.count(configs, /"warn"|'warn'/g);
+    const errors = ctx.count(configs, /"error"|'error'/g);
+    if (warns > 0) {
+        findings.push({
+            level: 'warn',
+            message: `lint 规则档位 error=${errors} warn=${warns}——warn 等于不存在：人忽略、agent 当噪音过滤`,
+            advice: '转 error；改不动的进基线 + 棘轮，绝不降级（https://eslint.org/docs/latest/use/suppressions）',
+        });
     } else {
-        const warns = ctx.count(configs, /"warn"|'warn'/g);
-        const errors = ctx.count(configs, /"error"|'error'/g);
-        if (warns > 0) {
+        findings.push({ level: 'ok', message: `lint 规则全是 error 档（error=${errors}）` });
+    }
+    if (ctx.inAny(RUNNER_RE, /--max-warnings[ =]0/)) {
+        findings.push({ level: 'ok', message: 'lint 用 --max-warnings=0 机械保证' });
+    } else {
+        findings.push({
+            level: 'warn',
+            message: 'lint 未加 --max-warnings=0，warn 会静默积累',
+            advice: '验证命令里写 eslint . --max-warnings=0（https://eslint.org/docs/latest/use/command-line-interface#--max-warnings）',
+        });
+    }
+    return findings;
+}
+
+/**
+ * 阶段 3 机械层：各栈 lint 是否以「警告即失败」收口，加生成物 drift 门。
+ * 判定的是硬度而不是「有没有配」：clippy 只 -W 不 -D，等于 lint 只是建议。
+ */
+function checkLintHardness(ctx) {
+    const findings = [];
+    // clippy / -Werror 这类硬度开关落在 CI、任务运行器或构建清单里
+    const HARDNESS_HOSTS_RE = /^\.github\/workflows\/|(^|\/)([Jj]ustfile|[Mm]akefile|Taskfile\.ya?ml|package\.json|Cargo\.toml|clippy\.toml|pom\.xml|build\.gradle(\.kts)?)$/;
+
+    if (ctx.stacks.includes('js-ts') || ctx.has(/(^|\/)eslint\.config\.[cm]?[jt]s$|(^|\/)\.eslintrc/)) {
+        findings.push(...eslintFindings(ctx));
+    }
+
+    if (ctx.stacks.includes('python')) {
+        const RUFF_FILE_RE = /(^|\/)(ruff\.toml|\.ruff\.toml|pyproject\.toml|setup\.cfg|tox\.ini|\.flake8)$/;
+        const LINTER_RE = /\bruff\b|\bflake8\b|\bpylint\b/i;
+        if (ctx.inAny(RUFF_FILE_RE, LINTER_RE) || ctx.inAny(RUNNER_RE, LINTER_RE)) {
+            findings.push({ level: 'ok', message: '有 Python lint 配置（ruff/flake8/pylint）' });
+        } else {
             findings.push({
                 level: 'warn',
-                message: `lint 规则档位 error=${errors} warn=${warns}——warn 等于不存在：人忽略、agent 当噪音过滤`,
-                advice: '转 error；改不动的进基线 + 棘轮，绝不降级（https://eslint.org/docs/latest/use/suppressions）',
+                message: '有 Python 源码但没有 ruff/flake8/pylint 配置，lint 层完全没设门',
+                advice: '加 ruff 并把规则集写进 pyproject.toml，CI 里跑 ruff check（https://docs.astral.sh/ruff/configuration/）',
             });
-        } else {
-            findings.push({ level: 'ok', message: `lint 规则全是 error 档（error=${errors}）` });
         }
-        if (ctx.inAny(RUNNER_RE, /--max-warnings[ =]0/)) {
-            findings.push({ level: 'ok', message: 'lint 用 --max-warnings=0 机械保证' });
+    }
+
+    if (ctx.stacks.includes('rust')) {
+        const denied = ctx.inAny(HARDNESS_HOSTS_RE, /-D[ =]?\s*warnings|--deny[ =]warnings|deny\(warnings\)/)
+            || ctx.countByStack('src', { rust: /#!\[deny\(/g }) > 0;
+        if (denied) {
+            findings.push({ level: 'ok', message: 'clippy 以 -D warnings / deny(warnings) 收口' });
         } else {
             findings.push({
                 level: 'warn',
-                message: 'lint 未加 --max-warnings=0，warn 会静默积累',
-                advice: '验证命令里写 eslint . --max-warnings=0（https://eslint.org/docs/latest/use/command-line-interface#--max-warnings）',
+                message: 'clippy 未以 -D warnings 收口，警告只是建议——warn 等于不存在',
+                advice: 'CI 里跑 cargo clippy --all-targets -- -D warnings（https://doc.rust-lang.org/clippy/usage.html · https://doc.rust-lang.org/rustc/lints/levels.html）',
             });
         }
+    }
+
+    if (ctx.stacks.includes('go')) {
+        if (ctx.has(/(^|\/)\.golangci\.(ya?ml|toml|json)$/) || ctx.inAny(RUNNER_RE, /golangci-lint/)) {
+            findings.push({ level: 'ok', message: '有 golangci-lint 配置' });
+        } else {
+            findings.push({
+                level: 'warn',
+                message: '有 Go 源码但没有 golangci-lint，只有 go vet 的最小集',
+                advice: '加 .golangci.yml 并在 CI 里跑 golangci-lint run（https://golangci-lint.run/）',
+            });
+        }
+    }
+
+    if (ctx.stacks.includes('java-kotlin')) {
+        if (ctx.inAny(HARDNESS_HOSTS_RE, /-Werror/)) {
+            findings.push({ level: 'ok', message: 'javac/kotlinc 以 -Werror 收口' });
+        } else {
+            findings.push({
+                level: 'warn',
+                message: '有 Java/Kotlin 源码但编译未加 -Werror，警告会静默积累',
+                advice: 'compilerArgs 里加 -Werror（https://docs.oracle.com/en/java/javase/21/docs/specs/man/javac.html）',
+            });
+        }
+    }
+
+    if (findings.length === 0) {
+        findings.push({
+            level: 'info',
+            message: `不适用：未识别到 ${ALL_STACK_LABELS} 任一技术栈的源码，没有可查的 lint 体系`,
+        });
     }
 
     const hasCodegen = ctx.inAny(RUNNER_RE, /codegen|generate|openapi|prisma|protoc|graphql/i);
@@ -440,18 +729,28 @@ function checkLintHardness(ctx) {
 }
 
 /**
- * 阶段 3 逃逸口：eslint-disable / ts-ignore / any 的数量必须被棘轮监控。
+ * 阶段 3 逃逸口：各生态「刷绿手段」的数量必须被棘轮监控。
+ * 只统计仓库里实际存在的语言——一个已识别语言都没有时报 info「不适用」，绝不报 ok。
  * 判定顺序：已用 betterer → ok；否则比对 .verify-baseline.json；两者都无且计数 > 0 → warn。
  */
 function checkEscapeRatchet(ctx) {
+    const escapes = activeMetrics(ctx).filter(m => m.scope === 'src');
+    if (escapes.length === 0) {
+        return fold('escape-ratchet', 3, [{
+            level: 'info',
+            message: `不适用：未识别到 ${ALL_STACK_LABELS} 任一技术栈的源码，没有已知形态的逃逸口可查`,
+        }]);
+    }
     const counts = countMetrics(ctx);
-    const escapes = RATCHET_METRICS.filter(m => m.scope === 'src');
     const total = escapes.reduce((n, m) => n + counts[m.key], 0);
     const tally = escapes.map(m => `${m.label}=${counts[m.key]}`).join(' ');
+    const scanned = stackSummary(ctx);
 
+    // betterer 只管 JS/TS：它管不到 unwrap / nolint，别让它替别的栈开绿灯
     const hasBetterer = (ctx.has(/(^|\/)package\.json$/) && /betterer/.test(ctx.read('package.json')))
         || ctx.has(/(^|\/)\.betterer\.results$/);
-    if (hasBetterer) {
+    const outsideBetterer = escapes.filter(m => !m.res['js-ts']);
+    if (hasBetterer && outsideBetterer.every(m => counts[m.key] === 0)) {
         return fold('escape-ratchet', 3, [{
             level: 'ok',
             message: `逃逸口（${tally}）已用成熟工具 betterer 管理棘轮（https://phenomnomnominal.github.io/betterer/）`,
@@ -459,9 +758,11 @@ function checkEscapeRatchet(ctx) {
     }
 
     const baseline = readBaseline(ctx.root);
-    if (baseline) {
-        const over = escapes
-            .filter(m => typeof baseline[m.key] === 'number' && counts[m.key] > baseline[m.key])
+    // 旧基线只覆盖部分技术栈时，缺的指标视为无基线：不崩、也不拿「未超基线」掩盖它
+    const tracked = escapes.filter(m => baseline && typeof baseline[m.key] === 'number');
+    if (tracked.length > 0) {
+        const over = tracked
+            .filter(m => counts[m.key] > baseline[m.key])
             .map(m => `${m.label} ${baseline[m.key]}→${counts[m.key]}`);
         if (over.length > 0) {
             return fold('escape-ratchet', 3, [{
@@ -470,38 +771,55 @@ function checkEscapeRatchet(ctx) {
                 advice: `修根因，不要加 disable 注释；确实要放宽先降基线再改 ${BASELINE_FILE}`,
             }]);
         }
+        const missing = escapes.filter(m => !tracked.includes(m) && counts[m.key] > 0);
+        if (missing.length > 0) {
+            return fold('escape-ratchet', 3, [{
+                level: 'warn',
+                message: `逃逸口（${tally}）未超过 ${BASELINE_FILE} 基线，但 ${missing.map(m => `${m.label}=${counts[m.key]}`).join(' ')} 还没进基线`,
+                advice: `重跑 verify-doctor --baseline，把新技术栈的指标补进 ${BASELINE_FILE}`,
+            }]);
+        }
         return fold('escape-ratchet', 3, [{ level: 'ok', message: `逃逸口（${tally}）未超过 ${BASELINE_FILE} 基线` }]);
     }
 
     if (total === 0) {
-        return fold('escape-ratchet', 3, [{ level: 'ok', message: '无 eslint-disable / ts-ignore / any 逃逸口' }]);
+        return fold('escape-ratchet', 3, [{ level: 'ok', message: `已扫 ${scanned} 源码，无逃逸口（${tally}）` }]);
     }
     return fold('escape-ratchet', 3, [{
         level: 'warn',
-        message: `逃逸口 ${total} 处（${tally}）且无棘轮基线`,
-        advice: `跑 verify-doctor --baseline 立基线，CI 里只检查不增；或直接上 betterer（https://phenomnomnominal.github.io/betterer/）`,
+        message: `${scanned} 逃逸口 ${total} 处（${tally}）且无棘轮基线`,
+        advice: `跑 verify-doctor --baseline 立基线，CI 里只检查不增；或直接上 betterer（https://phenomnomnominal.github.io/betterer/）${ctx.stacks.includes('rust') ? '；unwrap/expect 换成 ? 与显式错误类型（https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html）' : ''}`,
     }]);
 }
 
 /** 阶段 5 flaky 治理：.only 零容忍，skip 要有 FLAKY 标注且未过期，retry 不掩盖问题。 */
 function checkFlakyQuarantine(ctx) {
     const findings = [];
-    const counts = countMetrics(ctx);
     if (ctx.tests.length === 0) {
-        return fold('flaky-quarantine', 5, [{ level: 'info', message: '无测试文件，flaky 治理无从谈起' }]);
+        return fold('flaky-quarantine', 5, [{
+            level: 'info',
+            message: '不适用：未发现测试文件（路径与内联测试属性双路都没命中），flaky 治理无从谈起',
+        }]);
     }
+    const counts = countMetrics(ctx);
+    const skips = counts.test_skip ?? 0;
 
-    if (counts.test_only > 0) {
-        findings.push({
-            level: 'error',
-            message: `${counts.test_only} 处 .only——会静默跳过同文件其余测试，绿灯无信息量`,
-            advice: '零容忍：删掉 .only（https://nodejs.org/api/test.html）',
-        });
+    // 独占执行只有 JS/TS 有，别对 cargo test / pytest 仓库假装检查过
+    if (ctx.stacks.includes('js-ts')) {
+        if ((counts.test_only ?? 0) > 0) {
+            findings.push({
+                level: 'error',
+                message: `${counts.test_only} 处 .only——会静默跳过同文件其余测试，绿灯无信息量`,
+                advice: '零容忍：删掉 .only（https://nodejs.org/api/test.html）',
+            });
+        } else {
+            findings.push({ level: 'ok', message: '无 .only' });
+        }
     } else {
-        findings.push({ level: 'ok', message: '无 .only' });
+        findings.push({ level: 'info', message: '.only 不适用：无 JS/TS 测试文件（独占执行是 JS/TS 特有形态）' });
     }
 
-    if (counts.test_skip > 0) {
+    if (skips > 0) {
         const tags = ctx.count(ctx.tests, /FLAKY:\s*#\d+\s+@\S+\s+due\s+\d{4}-\d{2}-\d{2}/g);
         const today = new Date().toISOString().slice(0, 10);
         const expired = [];
@@ -510,14 +828,14 @@ function checkFlakyQuarantine(ctx) {
                 if (m[2] < today) expired.push(`#${m[1]} due ${m[2]}`);
             }
         }
-        if (tags < counts.test_skip) {
+        if (tags < skips) {
             findings.push({
                 level: 'warn',
-                message: `${counts.test_skip} 处 skip 只有 ${tags} 处有机械可校验的标注`,
-                advice: '统一标记 FLAKY: #issue @owner due YYYY-MM-DD，CI 校验格式与到期，数量进棘轮',
+                message: `${skips} 处 skip（含 pytest.mark.skip / t.Skip / #[ignore] / @Disabled）只有 ${tags} 处有机械可校验的标注`,
+                advice: '统一标记 FLAKY: #issue @owner due YYYY-MM-DD，CI 校验格式与到期，数量进棘轮（https://docs.pytest.org/en/stable/how-to/skipping.html · https://pkg.go.dev/testing#T.Skip）',
             });
         } else {
-            findings.push({ level: 'ok', message: `${counts.test_skip} 处 skip 全部有 FLAKY 标注` });
+            findings.push({ level: 'ok', message: `${skips} 处 skip 全部有 FLAKY 标注` });
         }
         if (expired.length > 0) {
             findings.push({
@@ -527,10 +845,10 @@ function checkFlakyQuarantine(ctx) {
             });
         }
         const baseline = readBaseline(ctx.root);
-        if (baseline && typeof baseline.test_skip === 'number' && counts.test_skip > baseline.test_skip) {
+        if (baseline && typeof baseline.test_skip === 'number' && skips > baseline.test_skip) {
             findings.push({
                 level: 'error',
-                message: `隔离测试数超出基线 ${baseline.test_skip}→${counts.test_skip}，隔离清单只允许下降`,
+                message: `隔离测试数超出基线 ${baseline.test_skip}→${skips}，隔离清单只允许下降`,
                 advice: '新增隔离条目需显式批准，批准后再更新基线',
             });
         }
@@ -543,6 +861,9 @@ function checkFlakyQuarantine(ctx) {
                 advice: '先跑 20 次同 commit 统计不稳定项，把结果落进 FLAKY.md 并给每条定责任人与到期日',
             });
         }
+    } else if (ctx.stacks.length === 0) {
+        // 一条 skip 探针都没有，就不能拿「无 skip 测试」当绿灯
+        findings.push({ level: 'info', message: `skip 不适用：测试文件都不属于 ${ALL_STACK_LABELS}，没有跳测标记的探针可用` });
     } else {
         findings.push({ level: 'ok', message: '无 skip 测试' });
     }
@@ -597,15 +918,21 @@ function readBaseline(root) {
     }
 }
 
-/** 统计全部棘轮指标当前值。 */
+/** 当前仓库用得上的棘轮指标：该指标至少覆盖一个仓库里真的存在的技术栈。 */
+function activeMetrics(ctx) {
+    return RATCHET_METRICS.filter(m => ctx.stacks.some(s => m.res[s]));
+}
+
+/** 统计当前仓库用得上的棘轮指标的值。 */
 function countMetrics(ctx) {
     const counts = {};
-    for (const m of RATCHET_METRICS) counts[m.key] = ctx.count(m.scope === 'src' ? ctx.srcs : ctx.tests, m.re);
+    for (const m of activeMetrics(ctx)) counts[m.key] = ctx.countByStack(m.scope, m.res);
     return counts;
 }
 
 /**
  * 棘轮：统计逃逸口与隔离测试数量，对比基线；write 时写入新基线。
+ * 只处理仓库里实际存在的技术栈的指标（Rust 仓库不会被写入一堆 0 的 JS 指标）。
  * 任一指标高于旧基线或存在 .only 时 fail=true，此时拒绝写入。
  * @param {string} repoDir 仓库根目录
  * @param {{write?: boolean}} [options] write=true 写 .verify-baseline.json
@@ -614,11 +941,12 @@ function countMetrics(ctx) {
 export function ratchet(repoDir, options = {}) {
     const root = path.resolve(repoDir);
     const ctx = createContext(root);
+    const metrics = activeMetrics(ctx);
     const counts = countMetrics(ctx);
     const baseline = readBaseline(root);
     const rows = [];
     const reasons = [];
-    for (const m of RATCHET_METRICS) {
+    for (const m of metrics) {
         const current = counts[m.key];
         const base = baseline && typeof baseline[m.key] === 'number' ? baseline[m.key] : -1;
         let status = '=';
@@ -629,14 +957,14 @@ export function ratchet(repoDir, options = {}) {
         } else if (current < base) status = '↓ 可收紧基线';
         rows.push({ key: m.key, current, baseline: base, status });
     }
-    if (counts.test_only > 0) reasons.push(`.only ${counts.test_only} 处（零容忍）`);
+    if ((counts.test_only ?? 0) > 0) reasons.push(`.only ${counts.test_only} 处（零容忍）`);
 
     const target = path.join(root, BASELINE_FILE);
     const fail = reasons.length > 0;
     let written = false;
     if (options.write && !fail) {
         const payload = { _note: 'verify-doctor 棘轮基线：逃逸口与隔离测试只允许下降。CI 跑 verify-doctor 校验。', _updated: new Date().toISOString().slice(0, 10) };
-        for (const m of RATCHET_METRICS) payload[m.key] = counts[m.key];
+        for (const m of metrics) payload[m.key] = counts[m.key];
         fs.writeFileSync(target, `${JSON.stringify(payload, null, 2)}\n`);
         written = true;
     }
@@ -672,6 +1000,8 @@ const USAGE = `用法: verify-doctor [repo路径] [--strict] [--baseline] [--jso
   --baseline    写 ${BASELINE_FILE} 立棘轮基线（有指标高于旧基线或存在 .only 时拒绝写入）
   --json        输出单个 JSON 对象（字段见 tools/verify-doctor/README.md）
   --help        显示本说明
+
+支持的技术栈: ${ALL_STACK_LABELS}（检查项无可检之物时报 info「不适用」，不报 ok）
 
 退出码: 0 = 无 error 级检查 · 1 = 有 error 级检查（或拒绝写入基线）· 2 = 用法错误`;
 

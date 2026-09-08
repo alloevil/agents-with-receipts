@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { diagnose, ratchet } from '../index.mjs';
+import { diagnose, ratchet, STACK_IDS } from '../index.mjs';
 
 const CLI = new URL('../index.mjs', import.meta.url).pathname;
 
@@ -386,4 +386,218 @@ test('--help 退出码 0 且列出全部 flag', () => {
         assert.ok(res.stdout.includes(flag), `--help 应列出 ${flag}`);
     }
     assert.match(res.stdout, /退出码/);
+});
+
+// ── 多技术栈：JS/TS 之外的四个生态 ─────────────────────────────────────────
+// 下面的夹具敢直接写 `#[test]` / `unwrap()` / `//nolint` 字面量，是因为逃逸口与
+// 跳测指标按技术栈分别统计：Rust 的正则只扫 .rs、Go 的只扫 .go，本文件是 .mjs，
+// 不会自己撞上自己的规则。JS/TS 形态（skip/only）仍必须插值拼出。
+
+/** Rust 主流约定：测试内联在源文件里，unwrap 是这个生态的逃逸口。 */
+const RUST_REPO = {
+    'Cargo.toml': '[package]\nname = "demo"\nversion = "0.1.0"\n',
+    'src/main.rs': [
+        'fn main() { println!("{}", load().unwrap()); }',
+        'fn load() -> Result<u8, ()> { Ok(1) }',
+        '',
+        '#[cfg(test)]',
+        'mod tests {',
+        '    #[test]',
+        '    fn loads() { assert_eq!(super::load().unwrap(), 1); }',
+        '}',
+        '',
+    ].join('\n'),
+};
+
+test('STACK_IDS 就是文档承诺的 5 个技术栈标记', () => {
+    assert.deepStrictEqual(STACK_IDS, ['js-ts', 'python', 'go', 'rust', 'java-kotlin']);
+});
+
+test('Rust：内联 #[test] 的源文件同时算源与测试，unwrap/expect 进逃逸口', () => {
+    const checks = diagnose(makeRepo(RUST_REPO));
+    const cmd = byId(checks, 'verify-command');
+    assert.match(cmd.message, /技术栈 Rust/);
+    assert.match(cmd.message, /源文件 1 个 · 测试文件 1 个/);
+    assert.doesNotMatch(cmd.message, /未发现测试文件/);
+    assert.doesNotMatch(cmd.message, /没有任务运行器/);
+    assert.match(cmd.message, /Cargo\.toml（cargo test \/ cargo clippy）/);
+
+    // 对一个没有 JS 的仓库报「无 ts-ignore / any」是零信息量的绿灯
+    const esc = byId(checks, 'escape-ratchet');
+    assert.equal(esc.level, 'warn');
+    assert.match(esc.message, /unwrap\/expect=2/);
+    assert.doesNotMatch(esc.message, /eslint-disable/);
+
+    // 「无测试文件」这个前提是错的，后续检查不该再借它跳过
+    assert.doesNotMatch(byId(checks, 'flaky-quarantine').message, /未发现测试文件/);
+});
+
+test('无任何已识别技术栈：escape-ratchet 报 info「不适用」而不是绿灯', () => {
+    const checks = diagnose(makeRepo({ 'README.md': '# 文档仓库\n', 'docs/guide.md': '只有文档\n' }));
+    const esc = byId(checks, 'escape-ratchet');
+    assert.equal(esc.level, 'info');
+    assert.notEqual(esc.level, 'ok');
+    assert.match(esc.message, /不适用/);
+    // 类型层与 lint 层同理：无可检之物一律 info
+    assert.equal(byId(checks, 'type-strict').level, 'info');
+    assert.match(byId(checks, 'type-strict').message, /不适用/);
+    assert.match(byId(checks, 'lint-hardness').message, /不适用/);
+});
+
+test('verify-command 认各生态约定入口：Cargo.toml / go.mod / pyproject.toml / pom.xml / build.gradle', () => {
+    const cases = [
+        [{ 'Cargo.toml': '[package]\n', 'src/lib.rs': 'pub fn a() {}\n' }, /Cargo\.toml（cargo test \/ cargo clippy）/],
+        [{ 'go.mod': 'module demo\n', 'main.go': 'package main\n' }, /go\.mod（go test \.\/\.\.\.）/],
+        [{ 'pyproject.toml': '[project]\nname = "demo"\n', 'app.py': 'x = 1\n' }, /pyproject\.toml（pytest \/ tox \/ nox）/],
+        [{ 'pom.xml': '<project/>\n', 'src/main/java/A.java': 'class A {}\n' }, /pom\.xml（mvn test）/],
+        [{ 'build.gradle.kts': 'plugins {}\n', 'src/main/kotlin/A.kt': 'class A\n' }, /build\.gradle\.kts（gradle test）/],
+    ];
+    for (const [files, re] of cases) {
+        const cmd = byId(diagnose(makeRepo(files)), 'verify-command');
+        assert.match(cmd.message, re, `未认出 ${Object.keys(files)[0]}`);
+        assert.doesNotMatch(cmd.message, /没有任务运行器/, `${Object.keys(files)[0]} 仍被说成没有入口`);
+    }
+});
+
+test('Java/Kotlin：src/test/java 路径与内联 @Test 都算测试文件', () => {
+    const checks = diagnose(makeRepo({
+        'pom.xml': '<project><modules><module>core</module></modules></project>\n',
+        'src/main/java/Svc.java': 'class Svc { @SuppressWarnings("unchecked") void run() {} }\n',
+        'src/test/java/SvcTest.java': 'class SvcTest { @Test void runs() {} }\n',
+        'core/src/main/java/Inline.java': 'class Inline { @Test void inline() {} }\n',
+    }));
+    const cmd = byId(checks, 'verify-command');
+    assert.match(cmd.message, /技术栈 Java\/Kotlin/);
+    assert.match(cmd.message, /源文件 2 个 · 测试文件 2 个/);
+    assert.match(byId(checks, 'escape-ratchet').message, /SuppressWarnings=1/);
+    assert.match(byId(checks, 'module-boundary').message, /Maven 多模块/);
+});
+
+test('Go：nolint 进逃逸口，缺 golangci-lint 点名 lint 层', () => {
+    const checks = diagnose(makeRepo({
+        'go.mod': 'module demo\n',
+        'store.go': 'package store\n\nvar cache = map[string]int{} //nolint:gochecknoglobals\n',
+        'store_test.go': 'package store\n',
+    }));
+    const esc = byId(checks, 'escape-ratchet');
+    assert.match(esc.message, /nolint=1/);
+    assert.doesNotMatch(esc.message, /any=/);
+    assert.match(byId(checks, 'lint-hardness').message, /golangci-lint/);
+});
+
+test('Python：缺 mypy/pyright 点名类型层，type: ignore 进逃逸口，strict 与 ruff 齐全则 ok', () => {
+    const bare = diagnose(makeRepo({
+        'pyproject.toml': '[project]\nname = "demo"\n',
+        'app.py': 'x = 1  # type: ignore\n',
+        'tests/test_app.py': 'def test_x():\n    assert True\n',
+    }));
+    assert.equal(byId(bare, 'type-strict').level, 'warn');
+    assert.match(byId(bare, 'type-strict').message, /mypy\/pyright/);
+    assert.match(byId(bare, 'escape-ratchet').message, /type-ignore\/noqa=1/);
+    assert.match(byId(bare, 'lint-hardness').message, /ruff/);
+
+    const strict = diagnose(makeRepo({
+        'pyproject.toml': '[tool.mypy]\nstrict = true\n\n[tool.ruff]\nselect = ["ALL"]\n',
+        'app.py': 'x: int = 1\n',
+        'tests/test_app.py': 'def test_x():\n    assert True\n',
+    }));
+    assert.equal(byId(strict, 'type-strict').level, 'ok');
+    assert.match(byId(strict, 'lint-hardness').message, /Python lint 配置/);
+});
+
+test('Rust：clippy 只 -W 不 -D 时点名 lint 硬度，-D warnings 则 ok', () => {
+    const step = flag => `jobs:\n  t:\n    steps:\n      - run: cargo clippy -- ${flag}\n`;
+    const soft = byId(diagnose(makeRepo({ ...RUST_REPO, '.github/workflows/ci.yml': step('-W clippy::all') })), 'lint-hardness');
+    assert.equal(soft.level, 'warn');
+    assert.match(soft.message, /-D warnings/);
+
+    const hard = byId(diagnose(makeRepo({ ...RUST_REPO, '.github/workflows/ci.yml': step('-D warnings') })), 'lint-hardness');
+    assert.match(hard.message, /clippy 以 -D warnings/);
+    assert.notEqual(hard.level, 'warn');
+});
+
+test('flaky-quarantine：Rust #[ignore] 算隔离测试，.only 对非 JS/TS 仓库标注不适用', () => {
+    const flaky = byId(diagnose(makeRepo({
+        'Cargo.toml': '[package]\n',
+        'src/lib.rs': '#[cfg(test)]\nmod t {\n    #[test]\n    #[ignore]\n    fn slow() {}\n}\n',
+    })), 'flaky-quarantine');
+    assert.equal(flaky.level, 'warn');
+    assert.match(flaky.message, /\.only 不适用/);
+    assert.match(flaky.message, /1 处 skip/);
+});
+
+test('确定性：各栈的硬等待与真实时钟都被点名，不再只认 JS 形态', () => {
+    const rust = byId(diagnose(makeRepo({
+        'Cargo.toml': '[package]\n',
+        'src/lib.rs': '#[cfg(test)]\nmod t {\n    #[test]\n    fn slow() { std::thread::sleep(d); let _ = std::time::Instant::now(); }\n}\n',
+    })), 'determinism');
+    assert.match(rust.message, /硬等待 1 处/);
+    assert.match(rust.message, /真实时间\/随机 1 处/);
+
+    const go = byId(diagnose(makeRepo({
+        'go.mod': 'module demo\n',
+        'a_test.go': 'package a\n\nfunc TestX(t *testing.T) { time.Sleep(d); _ = time.Now() }\n',
+    })), 'determinism');
+    assert.match(go.message, /硬等待 1 处/);
+    assert.match(go.message, /真实时间\/随机 1 处/);
+});
+
+test('棘轮：Rust 仓库只写该生态的指标，旧基线缺新指标时不崩也不假绿', () => {
+    const dir = makeRepo(RUST_REPO);
+    const set = ratchet(dir, { write: true });
+    assert.equal(set.written, true);
+    assert.deepEqual(set.rows.map(r => r.key), ['rust_unwrap', 'rust_unsafe', 'rust_allow', 'test_skip']);
+    const baseline = JSON.parse(fs.readFileSync(path.join(dir, '.verify-baseline.json'), 'utf-8'));
+    assert.equal(baseline.rust_unwrap, 2);
+    assert.equal('eslint_disable' in baseline, false, 'Rust 仓库不该被写入一堆 0 的 JS 指标');
+    assert.equal(byId(diagnose(dir), 'escape-ratchet').level, 'ok');
+
+    // 旧基线只覆盖 JS 指标：既不报错，也不能用「未超基线」给 Rust 逃逸口开绿灯
+    const stale = byId(diagnose(makeRepo({ ...RUST_REPO, '.verify-baseline.json': '{"any_type": 0}\n' })), 'escape-ratchet');
+    assert.equal(stale.level, 'warn');
+    assert.match(stale.message, /无棘轮基线/);
+
+    // 混合栈仓库：JS 指标进了基线、Rust 指标没进 → 点名缺口而不是报 ok
+    const mixed = byId(diagnose(makeRepo({
+        ...CLEAN,
+        ...RUST_REPO,
+        '.verify-baseline.json': '{"eslint_disable": 0, "ts_ignore": 0, "any_type": 0}\n',
+    })), 'escape-ratchet');
+    assert.equal(mixed.level, 'warn');
+    assert.match(mixed.message, /还没进基线/);
+});
+
+test('不受支持的技术栈（Ruby）：没有探针的检查一律 info，不得出现零信息量的 ok', () => {
+    // 语言无关的部分全部做对，好让「假绿灯」无处藏身：唯一能变红的只剩探针缺失
+    const checks = diagnose(makeRepo({
+        'Makefile': 'check:\n\tTZ=UTC ruby -Itests tests/app_test.rb --format json\n',
+        '.github/workflows/ci.yml': CI_WITH_ARTIFACT,
+        '.github/PULL_REQUEST_TEMPLATE.md': '## 复现命令\n\n## 证据\n',
+        'lib/app.rb': "require 'net/http'\ndef run\n  sleep 5\n  Time.now\nend\n",
+        'tests/app_test.rb': "require 'test/unit'\nclass T < Test::Unit::TestCase\n  def test_x\n    sleep 5\n    assert_equal 1, 1\n  end\nend\n",
+    }));
+
+    // 测试里明明写着 sleep 5 与 Time.now，报「测试无硬等待」就是零信息量的绿灯
+    const det = byId(checks, 'determinism');
+    assert.equal(det.level, 'info');
+    assert.match(det.message, /不适用/);
+    assert.doesNotMatch(det.message, /测试无硬等待/);
+    assert.doesNotMatch(det.message, /测试无真实时间/);
+
+    const flaky = byId(checks, 'flaky-quarantine');
+    assert.notEqual(flaky.level, 'ok');
+    assert.match(flaky.message, /skip 不适用/);
+    assert.doesNotMatch(flaky.message, /无 skip 测试/);
+
+    for (const id of ['type-strict', 'lint-hardness', 'escape-ratchet']) {
+        const c = byId(checks, id);
+        assert.equal(c.level, 'info', `${id} 无探针却报 ${c.level}`);
+        assert.match(c.message, /不适用/);
+    }
+
+    // 剩下还能报 ok 的，必须是与语言无关、确实核实过的事实
+    const LANG_AGNOSTIC = new Set(['verify-command', 'failure-artifacts', 'module-boundary', 'evidence-template']);
+    for (const c of checks) {
+        if (c.level === 'ok') assert.ok(LANG_AGNOSTIC.has(c.id), `${c.id} 在无探针的仓库里报了 ok：${c.message}`);
+    }
 });

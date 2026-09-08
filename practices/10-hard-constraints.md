@@ -81,6 +81,8 @@
 | Go | `internal/` 目录，由 go 命令强制 | `go vet` 与自定义 analyzer |
 | Rust | crate 拆分 + `pub(crate)` / `pub(super)` | clippy 规则 |
 
+这张表的五个栈与本仓库 `verify-doctor` 的探测口径是同一套：JS/TS · Python · Go · Rust · Java/Kotlin（表里 TypeScript 那一行对纯 JavaScript 同样成立，只是少了 ② 类型层这一档）。栈之外的语言仍然适用 10.1 的分层判据，只是具体手段要你自己填。
+
 **结构层强一个数量级的原因只有一个：它不依赖检查器被执行。** lint 规则要靠有人配好、有人跑、CI 步骤没被跳过、没人加白名单；包边界和可见性由编译器/包管理器在解析阶段执行，绕不过去。
 
 拆不动时（单体仓库、循环依赖已成事实），退到 `dependency-cruiser`：
@@ -161,9 +163,21 @@ layers =
    }
    ```
 
-2. 再把 `eslint-disable` / `@ts-expect-error` / `as any` 的**总数**写进基线文件，CI 只允许它下降。本仓库 `verify-doctor` 的 `escape-ratchet` 检查就是这件事的最小实现：`node tools/verify-doctor/index.mjs . --baseline` 把当前计数写进 `.verify-baseline.json`，之后每次运行都与它比对。
+2. **逃逸口不只有 JS 那三种。** 上面两段配置堵的是 JS/TS 的口子；其他栈各有自己的一套写法，棘轮要数的是各自那一套：
 
-3. **先查有没有成熟工具，再考虑自己写。** 棘轮这个概念已经有四个成熟实现：betterer（把任意指标的历史值存进 `.betterer.results`，只允许朝目标方向变化）、ESLint 内置 bulk suppressions（`eslint-suppressions.json`）、dependency-cruiser 的 known-violations 基线、ArchUnit 的 `FreezingArchRule`。仓库已经在用其中之一时，别再叠第二套。
+   | 栈 | 常见逃逸口 | 收窄手段 |
+   |---|---|---|
+   | JS/TS | `eslint-disable` / `@ts-expect-error` / `as any` | 上面两段配置 |
+   | Python | `# type: ignore` / `# noqa` | ignore 必须带 error code（`# type: ignore[attr-defined]`，见 [mypy error codes](https://mypy.readthedocs.io/en/stable/error_codes.html)），并开 [`warn_unused_ignores`](https://mypy.readthedocs.io/en/stable/config_file.html#confval-warn_unused_ignores) 让已经失效的 ignore 自己报出来；`noqa` 必须带规则号（`# noqa: F841`，见 [Ruff · Error suppression](https://docs.astral.sh/ruff/linter/#error-suppression)、[flake8 violations](https://flake8.pycqa.org/en/latest/user/violations.html)），裸 `# noqa` 按违规处理 |
+   | Go | `//nolint` | 必须写明 linter 名、并在同一行写理由（官方支持 `//nolint:gocyclo // 理由` 这种写法）；`//nolint:all` 官方语义是"排除全部 linter"，等于对该行整体关掉检查（[Nolint Directive](https://golangci-lint.run/docs/linters/false-positives/#nolint-directive)） |
+   | Rust | `unwrap()` / `expect()` / `unsafe` / `#[allow]` | `unwrap_used` / `expect_used` 在 clippy 的 [`restriction`](https://doc.rust-lang.org/clippy/lints.html#restriction) 组里，官方要求按需挑选开启而不是整组打开（[unwrap_used](https://rust-lang.github.io/rust-clippy/master/#unwrap_used)）；unsafe 用 `#![forbid(unsafe_code)]`——官方原文"same as deny(C), but also forbids changing the lint level afterwards"，即内层再写 `#[allow]` 也打不开；豁免一律写 `#[expect]` 而不是 `#[allow]`，豁免没被触发时编译器报 `unfulfilled_lint_expectations`，过期的豁免会自己冒出来（[Lint check attributes](https://doc.rust-lang.org/reference/attributes/diagnostics.html#lint-check-attributes)） |
+   | Java/Kotlin | [`@SuppressWarnings`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/SuppressWarnings.html) | 按注解计数进基线；架构规则那一档直接用 ArchUnit 的 `FreezingArchRule`（见下一条） |
+
+   **顺带一条给检查器作者：绿灯必须有信息量。** 只数 `eslint-disable` 那三种，在一个满是 `unwrap()` 的 Rust 仓库上会报出"未发现逃逸口"——那不是干净，那是没看。某项检查在当前仓库无可检之物时，应当报「不适用」并说明原因，`ok` 只留给"查过了，确实干净"。这与 10.5 那条"warn 等于不存在"是同一个错误的两面：一个把真信号降到没人看，一个把没有信号包装成好消息。
+
+3. 再把上表里适用于你这个栈的那几项的**总数**写进基线文件，CI 只允许它下降。本仓库 `verify-doctor` 的 `escape-ratchet` 检查就是这件事的最小实现：`node tools/verify-doctor/index.mjs . --baseline` 把当前计数写进 `.verify-baseline.json`，之后每次运行都与它比对。
+
+4. **先查有没有成熟工具，再考虑自己写。** 棘轮这个概念已经有四个成熟实现：betterer（把任意指标的历史值存进 `.betterer.results`，只允许朝目标方向变化）、ESLint 内置 bulk suppressions（`eslint-suppressions.json`）、dependency-cruiser 的 known-violations 基线、ArchUnit 的 `FreezingArchRule`。仓库已经在用其中之一时，别再叠第二套。
 
 **agent 最爱用一行 disable 注释让 CI 变绿。** 不数它，前面四层全部白做。
 

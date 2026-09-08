@@ -65,6 +65,16 @@
       "verified": "2026-09-08"
     },
     {
+      "id": "verify-doctor-stack-coverage",
+      "claim": "verify-doctor recognises tests and escape hatches in five technology stacks.",
+      "value": "5",
+      "metric": "distinct stack identifiers implemented in tools/verify-doctor/index.mjs",
+      "method": "The stack ids js-ts, python, go, rust and java-kotlin appear in the implementation's stack list and in the tool's documented stack table; per-stack detection covers both test discovery (path conventions plus in-source markers such as Rust's #[test] inside src/) and escape hatches (eslint-disable / @ts-expect-error / as any, # type: ignore / # noqa, //nolint, unwrap() / unsafe / #[allow], @SuppressWarnings). Outside these five stacks the language-agnostic checks still run, while the stack-specific ones report info with a stated reason instead of ok: a green light on a check that had nothing to look at carries no information.",
+      "repro": "node -e \"const s=require('fs').readFileSync('tools/verify-doctor/index.mjs','utf8');console.log(['js-ts','python','go','rust','java-kotlin'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/tools/verify-doctor/README.md",
+      "verified": "2026-09-08"
+    },
+    {
       "id": "json-output-coverage",
       "claim": "All four CLI tools accept --json and emit one machine-readable object in a shared shape.",
       "value": "4/4",

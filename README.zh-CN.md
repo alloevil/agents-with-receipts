@@ -130,6 +130,7 @@ ln -s AGENTS.md CLAUDE.md
 
 - `target` 是绝对路径。只有 `agentsmd-lint` 例外：它接收多个文件，所以 `target` 是绝对路径数组，且每条结果额外带 `file`。
 - `level` 只有 `ok` / `warn` / `error` / `info` 四种取值，不会出现第五种。
+- `info` 不等于通过。它标记的可能是「命中了但不算缺陷」，也可能是「这项检查在这个仓库里无可检之物」——例如在 `verify-doctor` 没有对应探测的技术栈上做逃逸口统计。消费方要判断「这项检查过了吗」，必须判 `ok`，而不是判「不是 `error`」。
 - `stage` 是 0-5 的整数，只有 `verify-doctor` 输出。`agentsmd-lint` 的条目改带 `line`，命中没有行号时省略该键。
 - `advice` 是可选字段。不适用的字段就是没有这个键，而不是 `null`。
 - 带 `--json` 时 stdout 只有一个 JSON 对象：没有人类输出行，没有 ANSI 转义。
@@ -164,10 +165,11 @@ Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是
 
 ## 什么时候别用
 
-- **想要效率或性能数字。** 这里没有，而且是刻意的。[`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) 只数本仓库自己的产物（40 个带出处单元格、11 个章节、4 个工具、5 条 lint 规则、7 项 doctor 检查、9 项 verify-doctor 检查、4/4 个 CLI 支持 `--json`、0 依赖）。没有任何「照做就更快/更准」的断言——因为没测过。
+- **想要效率或性能数字。** 这里没有，而且是刻意的。[`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) 只数本仓库自己的产物（40 个带出处单元格、11 个章节、4 个工具、5 条 lint 规则、7 项 doctor 检查、9 项 verify-doctor 检查、这些检查能识别的 5 个技术栈、4/4 个 CLI 支持 `--json`、0 依赖）。没有任何「照做就更快/更准」的断言——因为没测过。
 - **需要保证时效的厂商事实。** 对照表标的是 **2026-08**。这个领域几个月一变——每格都是链接正是为了这个：下判断前把你真正依赖的那一格点开重核一遍。
 - **想让工具直接改你的文件。** 除 `agents-init`（写新的 AGENTS.md，已存在时不加 `--force` 拒绝覆盖）外，其余都只读只报。
 - **想让 `verify-doctor` 顺手把缺口补上。** 它是检测器不是修复器：只报出缺在哪个阶段、缺哪份证据，不动你的测试、配置和 CI。它也不自带 dependency-cruiser 或 betterer——零依赖是这里的规矩——只检测你是否已经采用了这类工具。
+- **想让 `verify-doctor` 什么语言都懂。** 它的探测是按生态写的，目前覆盖五个栈：**JS/TS、Python、Go、Rust、Java/Kotlin**。其他语言上，恰好有四项仍然能给出结论——`verify-command`、`failure-artifacts`、`module-boundary`、`evidence-template`，因为它们读的是 CI YAML 与仓库文件而不是源码；另外五项 `determinism`、`type-strict`、`lint-hardness`、`escape-ratchet`、`flaky-quarantine` 在那里**永远不会报 `ok`**：无可检之物时报 `info` 并写明不适用的原因，只有出现与语言无关的命中（例如验证命令没固定 `TZ`）才升到 `warn`。这是设计规则而不是没做完：**某项检查无可检之物时一律报 `info`，绝不报 `ok`**；`ok` 只能表示「查过了，确实干净」。一个实际含义是「这条探测不适合你的仓库」的绿灯，信息量为零——它正是 [第 10 章](practices/10-hard-constraints.md) 批判的「warn 等于不存在」的镜像。
 - **Node < 20**，或者想要一个已发布的 npm 包——工具以源码形式随仓库分发。
 - **想看模型选型或 prompt 工程的观点。** 范围是仓库侧的两条轴：agent 读得懂这个仓库吗（memory 文件、规则、skills、hooks、沙箱、审批、MCP、headless），agent 在里面验得动自己的工作成果吗（验证命令、确定性、失败证据、模块边界、逃逸口棘轮、flaky 隔离）。
 
