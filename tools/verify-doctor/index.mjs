@@ -18,6 +18,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { execFileSync } from 'node:child_process';
+// 四个 CLI 共用同一套 --json 输出（schema 只需学一次），helper 住在 agentsmd-lint
+import { renderJson } from '../agentsmd-lint/index.mjs';
 
 /** 棘轮基线文件名。 */
 const BASELINE_FILE = '.verify-baseline.json';
@@ -663,12 +665,15 @@ export function diagnose(repoDir) {
 
 const MARK = { ok: '✓', warn: '⚠', error: '✖', info: '·' };
 
-const USAGE = `用法: verify-doctor [repo路径] [--strict] [--baseline]
+const USAGE = `用法: verify-doctor [repo路径] [--strict] [--baseline] [--json]
 
   <repo路径>    默认当前目录
   --strict      把阶段门缺口（warn）升成 error，退出码随之变红
   --baseline    写 ${BASELINE_FILE} 立棘轮基线（有指标高于旧基线或存在 .only 时拒绝写入）
-  --help        显示本说明`;
+  --json        输出单个 JSON 对象（字段见 tools/verify-doctor/README.md）
+  --help        显示本说明
+
+退出码: 0 = 无 error 级检查 · 1 = 有 error 级检查（或拒绝写入基线）· 2 = 用法错误`;
 
 function main(argv) {
     const args = argv.slice(2);
@@ -676,6 +681,7 @@ function main(argv) {
         console.log(USAGE);
         process.exit(0);
     }
+    const json = args.includes('--json');
     const strict = args.includes('--strict');
     const baselineMode = args.includes('--baseline');
     const repoDir = args.find(a => !a.startsWith('-')) ?? '.';
@@ -685,7 +691,30 @@ function main(argv) {
     }
 
     if (baselineMode) {
-        const { rows, fail, reasons, path: target } = ratchet(repoDir, { write: true });
+        const { rows, fail, reasons, written, path: target } = ratchet(repoDir, { write: true });
+        // --json + --baseline：输出基线写入结果，而不是体检报告
+        if (json) {
+            const results = rows.map(r => {
+                const entry = {
+                    id: r.key,
+                    level: r.status.startsWith('↑') ? 'error' : 'info',
+                    message: `当前 ${r.current} · 基线 ${r.baseline < 0 ? '无' : r.baseline} · ${r.status}`,
+                    stage: 3,
+                    current: r.current,
+                };
+                if (r.baseline >= 0) entry.baseline = r.baseline;
+                return entry;
+            });
+            results.push(written
+                ? { id: 'baseline-write', level: 'ok', message: `基线已写入 ${target}`, stage: 3, file: target }
+                : {
+                    id: 'baseline-write', level: 'error',
+                    message: `拒绝写入基线：${reasons.join('、')}`,
+                    advice: '先把超出基线的指标降下来，再重新立基线',
+                    stage: 3, file: target,
+                });
+            process.exit(renderJson({ tool: 'verify-doctor', target: path.resolve(repoDir), results }));
+        }
         // 中日文字符渲染宽度是 2，表头的填充按渲染宽度算，别按字符数
         console.log(`${'指标'.padEnd(16)}${'当前'.padStart(4)}${'基线'.padStart(6)}`);
         for (const r of rows) {
@@ -701,6 +730,16 @@ function main(argv) {
     }
 
     const checks = diagnose(repoDir);
+    // --strict 在两种模式下同样把 warn 升成 error：退出码必须一致
+    if (json) {
+        const results = checks.map(c => {
+            const entry = { id: c.id, level: strict && c.level === 'warn' ? 'error' : c.level, message: c.message };
+            if (c.advice) entry.advice = c.advice;
+            entry.stage = c.stage;
+            return entry;
+        });
+        process.exit(renderJson({ tool: 'verify-doctor', target: path.resolve(repoDir), results }));
+    }
     const count = { ok: 0, warn: 0, error: 0 };
     console.log(`verify-doctor  ${path.resolve(repoDir)}`);
     for (let stage = 0; stage < STAGE_TITLES.length; stage++) {

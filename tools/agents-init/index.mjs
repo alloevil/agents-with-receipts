@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { lint } from '../agentsmd-lint/index.mjs';
+import { lint, renderJson, takeFlag } from '../agentsmd-lint/index.mjs';
 
 /** 读 JSON，文件不存在或不是合法 JSON 返回 null。 */
 function readJson(p) {
@@ -139,26 +139,74 @@ export function render({ name, description, commands, notes, neverDirs }) {
     return lines.join('\n');
 }
 
+const USAGE = `用法: agents-init [repo路径] [--force] [--link] [--json]
+
+  <repo路径>    默认当前目录
+  --force       AGENTS.md 已存在时也重新生成（覆盖）
+  --link        顺带建 CLAUDE.md -> AGENTS.md 软链，已存在则跳过
+  --json        输出单个 JSON 对象（字段见 tools/agents-init/README.md）
+  --help        显示本说明
+
+退出码: 0 = 已写入且自检零 error · 1 = 拒绝覆盖已存在的 AGENTS.md，或自检有 error 级命中 · 2 = 用法错误`;
+
 function main(argv) {
     const args = argv.slice(2);
+    if (takeFlag(args, '--help', '-h')) {
+        console.log(USAGE);
+        process.exit(0);
+    }
+    const json = takeFlag(args, '--json');
     const force = args.includes('--force');
     const link = args.includes('--link');
     const positional = args.filter(a => !a.startsWith('--'));
     if (positional.length > 1) {
-        console.error('用法: agents-init [repo路径] [--force] [--link]');
+        console.error(USAGE);
         process.exit(2);
     }
     const repoDir = path.resolve(positional[0] ?? '.');
+    if (!fs.existsSync(repoDir) || !fs.statSync(repoDir).isDirectory()) {
+        console.error(`用法: agents-init [repo路径]（${repoDir} 不是目录）`);
+        process.exit(2);
+    }
     const target = path.join(repoDir, 'AGENTS.md');
+    // --json 下所有产出先攒进 results，最后一次性打印单个 JSON 对象
+    const results = [];
+    const done = () => process.exit(renderJson({ tool: 'agents-init', target: repoDir, results }));
 
     if (fs.existsSync(target) && !force) {
+        if (json) {
+            results.push({
+                id: 'write', level: 'error',
+                message: `${target} 已存在，未覆盖手写内容`,
+                advice: '确认要重新生成请加 --force',
+            });
+            done();
+        }
         console.error(`✖ ${target} 已存在——不覆盖手写内容，确认要重新生成请加 --force`);
         process.exit(1);
     }
 
-    const text = render(detect(repoDir));
+    const detection = detect(repoDir);
+    const text = render(detection);
     fs.writeFileSync(target, text);
-    console.log(`✓ 已写入 ${target}`);
+    if (json) results.push({ id: 'write', level: 'ok', message: `已写入 ${target}`, file: target });
+    else console.log(`✓ 已写入 ${target}`);
+
+    if (json) {
+        const cmds = detection.commands.map(c => c.cmd);
+        results.push({
+            id: 'detect', level: 'info',
+            message: cmds.length > 0
+                ? `探测到 ${cmds.length} 条真实命令：${cmds.join('、')}`
+                : '未探测到构建/测试命令，命令表留了待补的提示行',
+        });
+        if (detection.neverDirs.length > 0) {
+            results.push({ id: 'never-dirs', level: 'info', message: `生成物目录写进 never 边界：${detection.neverDirs.join('、')}` });
+        }
+        for (const note of detection.notes) {
+            results.push({ id: 'detect-note', level: 'info', message: note });
+        }
+    }
 
     if (link) {
         const claude = path.join(repoDir, 'CLAUDE.md');
@@ -169,10 +217,12 @@ function main(argv) {
             exists = false;
         }
         if (exists) {
-            console.log('⚠ CLAUDE.md 已存在，跳过软链');
+            if (json) results.push({ id: 'link', level: 'warn', message: 'CLAUDE.md 已存在，跳过软链', file: claude });
+            else console.log('⚠ CLAUDE.md 已存在，跳过软链');
         } else {
             fs.symlinkSync('AGENTS.md', claude);
-            console.log(`✓ 已软链 ${claude} -> AGENTS.md`);
+            if (json) results.push({ id: 'link', level: 'ok', message: `已软链 ${claude} -> AGENTS.md`, file: claude });
+            else console.log(`✓ 已软链 ${claude} -> AGENTS.md`);
         }
     }
 
@@ -180,10 +230,15 @@ function main(argv) {
     const findings = lint(text, { pkg: readJson(path.join(repoDir, 'package.json')) });
     let errors = 0;
     for (const f of findings) {
-        console.log(`${f.level === 'error' ? '✖' : '⚠'} ${target}:${f.line} [${f.rule}] ${f.message}`);
+        if (json) results.push({ id: f.rule, level: f.level, message: f.message, line: f.line, file: target });
+        else console.log(`${f.level === 'error' ? '✖' : '⚠'} ${target}:${f.line} [${f.rule}] ${f.message}`);
         if (f.level === 'error') errors++;
     }
-    if (findings.length === 0) console.log('✓ agentsmd-lint 零命中');
+    if (findings.length === 0) {
+        if (json) results.push({ id: 'no-findings', level: 'ok', message: 'agentsmd-lint 零命中', file: target });
+        else console.log('✓ agentsmd-lint 零命中');
+    }
+    if (json) done();
     process.exit(errors > 0 ? 1 : 0);
 }
 

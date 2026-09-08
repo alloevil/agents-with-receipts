@@ -2,7 +2,7 @@ English | [简体中文](README.zh-CN.md)
 
 # agents-with-receipts
 
-**agents-with-receipts** is an evidence-first agentic-coding handbook plus four zero-dependency CLI tools that answer two questions about a repository: can an agent **understand** it (AGENTS.md, rules, hooks, skills) and can an agent **verify** its own work in it (one command that runs everything, determinism, failure evidence) — for engineers who want sourced practices instead of unsourced advice.
+**agents-with-receipts** is a handbook plus four zero-dependency CLIs answering two questions: can an agent **understand** your repo, and can it **verify** its own work?
 
 <p align="center">
   <img src="./assets/readme/hero.svg" width="100%" alt="Agents with Receipts · An evidence-backed agentic coding practices handbook. On the right, a receipt-style ticket lists four boards, stamped with a red 'evidence-backed' seal: TOTAL 4 BOARDS · 0 SLOGANS.">
@@ -15,23 +15,43 @@ English | [简体中文](README.zh-CN.md)
 
 <p align="center"><strong><a href="https://alloevil.github.io/agents-with-receipts/">→ Read online (GitHub Pages)</a></strong> · Receipt-stub navigation on the left · Content stays in sync with the repo Markdown</p>
 
-**Every claim must answer one question: *where's the source?*** The answer is a clickable official doc, not a slogan.
+## 60-second start
 
-There are already plenty of best-practice collections for Claude Code, Codex, and Cursor — but nearly all of them are unsourced assertions ("keep CLAUDE.md short", "plan before you code"). The approach here: a comparison table **verified cell-by-cell against official docs, where every cell is itself a link**; a practices map where every entry carries a source and verification date; plus checkers that actually run — one for whether an agent can read the repo, one for whether it can verify its own work.
-
-## What it is
-
-Four artefacts under one rule, along two axes — can an agent **understand** this repo, and can an agent **verify** its own work. [`rosetta/`](rosetta/) compares Claude Code, OpenAI Codex, Cursor and GitHub Copilot across ten concepts — project and user memory, conditional rules, skills, hooks, sub-agents, OS sandbox, approval modes, MCP config, headless/CI — and all 40 cells are official-doc links, verified 2026-08. [`practices/`](practices/) is eleven chapters, each practice written as scenario → approach → evidence → boundaries; chapters 09–10 carry the second axis. [`tools/`](tools/) turns that into executable checks: `agentsmd-lint` grades one memory file, `agents-doctor` grades a whole repo's agent setup, `agents-init` writes an AGENTS.md pre-filled with commands it actually detected, `verify-doctor` grades the repo's verification loop across six stages (0, one command runs everything → 5, prerequisites for auto-merge). [`templates/`](templates/) holds skeletons built to pass the linter. The repo dogfoods all of it in CI.
-
-## Install
-
-Node ≥ 20, no dependencies to install — the four CLIs are single-file Node ESM scripts using only the standard library.
+Two commands, both pointed at **your own** repo — one per question. Node ≥ 20, nothing to install.
 
 ```bash
 git clone https://github.com/alloevil/agents-with-receipts.git
-cd agents-with-receipts
-node tools/agentsmd-lint/index.mjs AGENTS.md
+
+# Can an agent understand my repo? — AGENTS.md, rules, hooks, skills, CI gate
+node agents-with-receipts/tools/agents-doctor/index.mjs your-repo/
+
+# Can an agent verify its own work in it? — one verification command, determinism, failure evidence
+node agents-with-receipts/tools/verify-doctor/index.mjs your-repo/
 ```
+
+Each prints one line per check and closes with a summary. Here is this repo checking itself:
+
+```text
+agent-ready: ok 4 · warn 0 · error 0
+verify-ready: ok 2 · warn 5 · error 0
+```
+
+Every line that is not `ok` names the file, the missing evidence, and an official doc link for the fix. Exit code is 1 only when an `error` was found, so both drop straight into CI.
+
+## What it is
+
+| Part | What it is | Which axis | Size |
+|---|---|---|---|
+| [`rosetta/`](rosetta/) | Cross-tool comparison table: what Claude Code, Codex, Cursor and Copilot each call the same concept, where the file lives, and how proximity rules differ | understand | 10 concepts × 4 tools = 40 cells, every cell an official doc link, verified 2026-08 |
+| [`practices/`](practices/) | Handbook chapters. Every practice reads scenario → approach → evidence → boundaries, with copy-paste examples | 00–08 understand, 09–10 verify | 11 chapters, of which 00 is a follow-along walkthrough |
+| [`tools/`](tools/) | CLIs that turn those chapters into checks you can run, on one file or a whole repo | both | 4 CLIs · 5 lint rules · 7 doctor checks · 9 verify-doctor checks |
+| [`templates/`](templates/) | `AGENTS.md` / `RULES.md` skeletons distilled from real projects, usage notes in the comments | understand | 2 skeletons, both built to pass the linter |
+
+One rule holds all four together: no entry without a source. This repo dogfoods the whole set in CI.
+
+## Install
+
+Node ≥ 20, no dependencies to install — the four CLIs are single-file Node ESM scripts using only the standard library, so the clone above is the entire installation.
 
 They are also declared as `bin` entries, so `npm link` gives you `agentsmd-lint`, `agents-doctor`, `agents-init` and `verify-doctor` as named commands.
 
@@ -50,6 +70,8 @@ They are also declared as `bin` entries, so `npm link` gives you `agentsmd-lint`
 
 If you only have ten minutes: read the "convergence landscape" and "proximity-rule differences" sections in [`rosetta/`](rosetta/), then run the linter once against your own repo.
 
+## rosetta — one concept, four names
+
 <p align="center">
   <img src="./assets/readme/section-rosetta.svg" width="100%" alt="Board one, rosetta: a cross-tool comparison of what the same concept is called and where it lives in Claude Code, Codex, Cursor, and Copilot.">
 </p>
@@ -62,6 +84,8 @@ One immediately usable takeaway: **make a root-level `AGENTS.md` the single sour
 ln -s AGENTS.md CLAUDE.md
 ```
 
+## practices — eleven chapters, every claim sourced
+
 <p align="center">
   <img src="./assets/readme/section-practices.svg" width="100%" alt="Board two, practices: a practices map with ten major categories plus templates, every claim carrying an official source and verification date.">
 </p>
@@ -69,6 +93,8 @@ ln -s AGENTS.md CLAUDE.md
 [`practices/`](practices/) is an eleven-chapter practices handbook: [00, a follow-along walkthrough](practices/00-agent-ready-walkthrough.md) (setting up full agent infrastructure from scratch) + chapters 01–10 (memory files / mechanism selection / task framing / verification loops / permissions & sandboxing / context management / parallel orchestration / safety & governance / verifiable repositories / pushing rules down into hard constraints). Every practice unfolds as "**scenario → approach (copy-paste examples) → evidence (official links) → boundaries**" — not a bullet-point index, but workflows you can actually follow to completion.
 
 Accompanied by [`templates/`](templates/): `AGENTS.md` / `RULES.md` skeletons distilled from real projects, with usage notes in the comments, designed to be used together with the linter below.
+
+## tools — four executable checks
 
 <p align="center">
   <img src="./assets/readme/section-lint.svg" width="100%" alt="Board three, the tools toolbox: lint checks a file, doctor checks a repo, init generates a starting point, verify checks the verification loop — zero dependencies.">
@@ -85,18 +111,47 @@ A four-piece toolkit that turns practices into executable checks. Zero dependenc
 
 All four tools exit with code 1 on any error, so they slot straight into CI. Stage gaps that `verify-doctor` finds are warnings by default (`--strict` promotes them to errors), so adopting it does not turn a repo red overnight. This repo dogfoods the full set: CI runs the lint gate + doctor checkup + verify-doctor, and the root `AGENTS.md` was generated by `agents-init` and then refined by hand.
 
-```bash
-# Run a checkup on your own repo
-git clone https://github.com/alloevil/agents-with-receipts.git
-node agents-with-receipts/tools/agents-doctor/index.mjs your-repo/
+## For agents
+
+Half the readers of this repo are agents. Handing one a human report line such as `✓ [agents-md] AGENTS.md 存在且通过 agentsmd-lint` and asking it to regex out the verdict is not an output format — it is a missing interface. So each CLI has a machine-readable one.
+
+All four accept `--json` and write the same shape to stdout:
+
+```json
+{
+  "tool": "verify-doctor",
+  "target": "/abs/path/to/repo",
+  "summary": { "ok": 2, "warn": 5, "error": 0, "info": 2 },
+  "results": [
+    { "id": "verify-command", "level": "warn", "message": "...", "advice": "...", "stage": 0 }
+  ]
+}
 ```
 
-## Core Positions
+- `target` is an absolute path. `agentsmd-lint` is the one exception: it takes a list of files, so its `target` is an array of absolute paths and every result additionally carries `file`.
+- `level` is one of `ok` / `warn` / `error` / `info`, and nothing else ever appears there.
+- `stage`, an integer 0–5, is emitted by `verify-doctor` only. `agentsmd-lint` entries carry `line` instead, omitted when a finding has no line number.
+- `advice` is optional. A field that does not apply is an absent key, never `null`.
+- Under `--json`, stdout holds exactly one JSON object: no human lines, no ANSI escapes.
+- Exit code is identical to the human mode: `0` clean, `1` if and only if some result is `error`, `2` for a usage error. On a usage error all four print one usage line to stderr and leave stdout empty, so a parse never sees half an object.
+- All four also accept `--help`, which prints usage, every flag and the exit-code meanings, and always exits 0.
+
+Two entry points for retrieval: [`llms.txt`](llms.txt) indexes the whole repo, one line of purpose per document, and each tool's README carries the field table for its own check ids — [agentsmd-lint](tools/agentsmd-lint/), [agents-doctor](tools/agents-doctor/), [agents-init](tools/agents-init/), [verify-doctor](tools/verify-doctor/).
+
+## Why you can trust it
+
+**Every claim must answer one question: *where's the source?*** The answer is a clickable official doc, not a slogan.
+
+There are already plenty of best-practice collections for Claude Code, Codex, and Cursor — but nearly all of them are unsourced assertions ("keep CLAUDE.md short", "plan before you code"). The approach here: a comparison table **verified cell-by-cell against official docs, where every cell is itself a link**; a practices map where every entry carries a source and verification date; plus checkers that actually run — one for whether an agent can read the repo, one for whether it can verify its own work.
+
+Four positions follow from that rule:
 
 1. **Evidence first.** Unsourced claims are not accepted; every cell of the comparison table is an official documentation link.
 2. **Half-life awareness.** This field shifts every few months; every entry is annotated with the applicable tool and date, and stale entries get deleted.
 3. **Less but better.** A handbook's value density is set by its worst entry.
 4. **Executable > readable.** A practice that can be turned into a lint rule, template, or scaffold should not remain prose.
+
+Every number quoted here is recomputable: [`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) pairs each one with the metric it measures and the exact command that reproduces it.
 
 ## When to use it
 
@@ -109,7 +164,7 @@ node agents-with-receipts/tools/agents-doctor/index.mjs your-repo/
 
 ## When NOT to use it
 
-- **You want productivity or performance numbers.** There are none, by design. [`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) only counts this repo's own artefacts (40 sourced cells, 11 chapters, 4 tools, 5 lint rules, 7 doctor checks, 9 verify-doctor checks, 0 dependencies). No claim is made that any practice makes an agent faster or more accurate, because that has not been measured.
+- **You want productivity or performance numbers.** There are none, by design. [`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) only counts this repo's own artefacts (40 sourced cells, 11 chapters, 4 tools, 5 lint rules, 7 doctor checks, 9 verify-doctor checks, 4/4 CLIs with `--json`, 0 dependencies). No claim is made that any practice makes an agent faster or more accurate, because that has not been measured.
 - **You need vendor facts guaranteed current.** The comparison table is dated **2026-08**. This field moves in months — that is why every cell is a link: re-verify the one cell your decision rests on before betting on it.
 - **You want the tools to fix your files.** All are read-only reporters except `agents-init`, which writes a new AGENTS.md and refuses to overwrite an existing one without `--force`.
 - **You want `verify-doctor` to close the gaps it finds.** It is a detector, not a fixer: it names the stage and the missing evidence, and never edits your tests, config or CI. It also ships no dependency-cruiser or betterer of its own — zero dependencies is a rule here — it only detects whether you have already adopted such a tool.

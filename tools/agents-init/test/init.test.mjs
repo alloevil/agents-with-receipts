@@ -164,3 +164,87 @@ test('CLI 端到端：生成 + 自跑 lint 零命中 + 输出前缀约定', () =
     assert.ok(text.includes('.env'));
     assert.ok(text.includes('force push'));
 });
+
+/** 四个 CLI 共用的 level 白名单。 */
+const LEVELS = ['ok', 'warn', 'error', 'info'];
+
+/**
+ * 断言 stdout 里只有一个 JSON 对象：没有人类输出混入、没有 ANSI、summary 与 results 自洽。
+ * @returns {{tool: string, target: string, summary: object, results: object[]}}
+ */
+function parseOnlyJson(res) {
+    assert.strictEqual(res.stderr, '', 'JSON 模式不该往 stderr 写东西');
+    assert.match(res.stdout, /^\{[\s\S]*\}\n$/, 'stdout 必须是单个 JSON 对象');
+    assert.doesNotMatch(res.stdout, /\u001b\[/, '不得含 ANSI');
+    const payload = JSON.parse(res.stdout);
+    for (const r of payload.results) {
+        assert.ok(LEVELS.includes(r.level), `level=${r.level} 不在白名单内`);
+        assert.ok(!('advice' in r) || typeof r.advice === 'string', 'advice 缺失就省略键，不输出 null');
+    }
+    assert.deepStrictEqual(
+        LEVELS.map(l => payload.summary[l]),
+        LEVELS.map(l => payload.results.filter(r => r.level === l).length),
+        'summary 必须等于 results 的 level 计数',
+    );
+    return payload;
+}
+
+test('--json：stdout 只有一个 JSON 对象，写了什么/探测到什么/自检结果都在里面', () => {
+    const dir = makeRepo({
+        'package.json': JSON.stringify({ name: 'json-app', description: '机器可读输出验证。', scripts: { test: 'node --test', build: 'tsc' } }),
+        dist: null,
+    });
+    const payload = parseOnlyJson(runCli([dir, '--link', '--json']));
+    assert.strictEqual(payload.tool, 'agents-init');
+    assert.strictEqual(payload.target, path.resolve(dir));
+
+    const write = payload.results.find(r => r.id === 'write');
+    assert.strictEqual(write.level, 'ok');
+    assert.strictEqual(write.file, path.join(dir, 'AGENTS.md'));
+
+    const detect = payload.results.find(r => r.id === 'detect');
+    assert.strictEqual(detect.level, 'info');
+    assert.match(detect.message, /npm test/);
+    assert.match(detect.message, /npm run build/);
+
+    assert.match(payload.results.find(r => r.id === 'never-dirs').message, /dist/);
+    assert.strictEqual(payload.results.find(r => r.id === 'link').file, path.join(dir, 'CLAUDE.md'));
+    // 生成物必须过自检：只有一条 no-findings，没有任何规则命中
+    assert.strictEqual(payload.results.find(r => r.id === 'no-findings').level, 'ok');
+    assert.strictEqual(payload.summary.error, 0);
+});
+
+test('--json 与人类模式退出码一致：拒绝覆盖时都是 1，且 JSON 仍是单个对象', () => {
+    const files = { 'AGENTS.md': '# 手写的\n\n别动我。\n', 'package.json': JSON.stringify({ name: 'p', scripts: { test: 'node --test' } }) };
+    const human = runCli([makeRepo(files)]);
+    const json = runCli([makeRepo(files), '--json']);
+    assert.strictEqual(human.status, 1);
+    assert.strictEqual(json.status, 1);
+    const payload = parseOnlyJson(json);
+    const write = payload.results.find(r => r.id === 'write');
+    assert.strictEqual(write.level, 'error');
+    assert.match(write.advice, /--force/);
+
+    // 正常写入路径两种模式同为 0
+    assert.strictEqual(runCli([makeRepo({}), '--json']).status, 0);
+    assert.strictEqual(runCli([makeRepo({})]).status, 0);
+});
+
+test('--help 退出码 0 且列出全部 flag', () => {
+    const res = runCli(['--help']);
+    assert.strictEqual(res.status, 0);
+    for (const flag of ['--force', '--link', '--json', '--help']) {
+        assert.ok(res.stdout.includes(flag), `--help 应列出 ${flag}`);
+    }
+    assert.match(res.stdout, /退出码/);
+});
+
+test('不存在的目标目录给干净的用法错误 exit 2，不抛 Node 栈，stdout 保持空', () => {
+    for (const args of [['/nonexistent-xyz-agents-init'], ['/nonexistent-xyz-agents-init', '--json']]) {
+        const res = runCli(args);
+        assert.equal(res.status, 2, `${args.join(' ')} 应 exit 2`);
+        assert.equal(res.stdout, '', 'stdout 必须干净，agent 才能安全解析');
+        assert.match(res.stderr, /用法: agents-init/);
+        assert.doesNotMatch(res.stderr, /at .*node:fs|writeFileUtf8/, '不得泄漏 Node 栈');
+    }
+});

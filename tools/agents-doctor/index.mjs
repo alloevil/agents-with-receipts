@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { lint, siblingPackage } from '../agentsmd-lint/index.mjs';
+import { lint, renderJson, siblingPackage, takeFlag } from '../agentsmd-lint/index.mjs';
 
 /** 列出 dir 下匹配 filter 的文件名（目录不存在返回 []）。 */
 function listDir(dir, filter) {
@@ -243,13 +243,30 @@ export function diagnose(repoDir) {
 
 const MARK = { ok: '✓', warn: '⚠', error: '✖', info: '·' };
 
+const USAGE = `用法: agents-doctor [repo路径] [--json]
+
+  <repo路径>    默认当前目录
+  --json        输出单个 JSON 对象（字段见 tools/agents-doctor/README.md）
+  --help        显示本说明
+
+退出码: 0 = 无 error 级检查 · 1 = 有 error 级检查 · 2 = 用法错误`;
+
 function main(argv) {
-    const repoDir = argv[2] ?? '.';
+    const args = argv.slice(2);
+    if (takeFlag(args, '--help', '-h')) {
+        console.log(USAGE);
+        process.exit(0);
+    }
+    const json = takeFlag(args, '--json');
+    const repoDir = args[0] ?? '.';
     if (!fs.existsSync(repoDir) || !fs.statSync(repoDir).isDirectory()) {
         console.error(`用法: agents-doctor [repo路径]（${repoDir} 不是目录）`);
         process.exit(2);
     }
     const checks = diagnose(repoDir);
+    if (json) {
+        process.exit(renderJson({ tool: 'agents-doctor', target: path.resolve(repoDir), results: checks }));
+    }
     const count = { ok: 0, warn: 0, error: 0 };
     for (const c of checks) {
         if (c.level in count) count[c.level]++;

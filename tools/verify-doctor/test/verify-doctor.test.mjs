@@ -3,7 +3,39 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { diagnose, ratchet } from '../index.mjs';
+
+const CLI = new URL('../index.mjs', import.meta.url).pathname;
+
+/** 四个 CLI 共用的 level 白名单。 */
+const LEVELS = ['ok', 'warn', 'error', 'info'];
+
+function runCli(args) {
+    return spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf-8' });
+}
+
+/**
+ * 断言 stdout 里只有一个 JSON 对象：没有人类输出混入、没有 ANSI、summary 与 results 自洽。
+ * @returns {{tool: string, target: string, summary: object, results: object[]}}
+ */
+function parseOnlyJson(res) {
+    assert.strictEqual(res.stderr, '', 'JSON 模式不该往 stderr 写东西');
+    assert.match(res.stdout, /^\{[\s\S]*\}\n$/, 'stdout 必须是单个 JSON 对象');
+    assert.doesNotMatch(res.stdout, /\u001b\[/, '不得含 ANSI');
+    const payload = JSON.parse(res.stdout);
+    for (const r of payload.results) {
+        assert.ok(LEVELS.includes(r.level), `level=${r.level} 不在白名单内`);
+        assert.ok(Number.isInteger(r.stage) && r.stage >= 0 && r.stage <= 5, `${r.id} stage=${r.stage}`);
+        assert.ok(!('advice' in r) || typeof r.advice === 'string', 'advice 缺失就省略键，不输出 null');
+    }
+    assert.deepStrictEqual(
+        LEVELS.map(l => payload.summary[l]),
+        LEVELS.map(l => payload.results.filter(r => r.level === l).length),
+        'summary 必须等于 results 的 level 计数',
+    );
+    return payload;
+}
 
 /** 在 tmpdir 里搭一个假仓库：files 是 相对路径 → 内容 的映射。 */
 function makeRepo(files = {}) {
@@ -297,4 +329,61 @@ test('每条 warn/error 都带 advice，且 advice 里的链接都是官方文�
     const links = checks.flatMap(c => (c.advice ?? '').match(/https?:\/\/[^\s（）)]+/g) ?? []);
     assert.ok(links.length > 0);
     for (const link of links) assert.match(link, /^https:\/\//);
+});
+
+test('--json：stdout 只有一个 JSON 对象，9 个检查带 stage 原样进 results', () => {
+    const dir = makeRepo(CLEAN);
+    const payload = parseOnlyJson(runCli([dir, '--json']));
+    assert.strictEqual(payload.tool, 'verify-doctor');
+    assert.strictEqual(payload.target, path.resolve(dir));
+    assert.deepEqual(payload.results.map(r => r.id).sort(), [...IDS].sort());
+    // 报告顺序即阶段顺序，agent 不用自己排
+    const stages = payload.results.map(r => r.stage);
+    assert.deepStrictEqual(stages, [...stages].sort((a, b) => a - b));
+});
+
+test('--json 与人类模式退出码一致，--strict 在两种模式下同样把 warn 升成 error', () => {
+    const clean = makeRepo(CLEAN);                                  // 零 error
+    const gappy = makeRepo({ 'src/a.js': 'export const a = 1;\n' }); // 多处阶段门缺口（warn）
+    const withOnly = makeRepo({ ...CLEAN, 'test/only.test.ts': ONLY_CALL }); // error
+    for (const [args, code] of [[[clean], 0], [[gappy], 0], [[gappy, '--strict'], 1], [[withOnly], 1]]) {
+        assert.strictEqual(runCli(args).status, code, `人类模式 ${args.join(' ')}`);
+        assert.strictEqual(runCli([...args, '--json']).status, code, `JSON 模式 ${args.join(' ')}`);
+    }
+    // --strict 下 warn 必须真的变成 error，而不是只改退出码
+    const strict = parseOnlyJson(runCli([gappy, '--strict', '--json']));
+    assert.strictEqual(strict.summary.warn, 0);
+    assert.ok(strict.summary.error > 0);
+});
+
+test('--baseline --json：输出基线写入结果而不是体检报告', () => {
+    const dir = makeRepo(CLEAN);
+    const res = runCli([dir, '--baseline', '--json']);
+    assert.strictEqual(res.status, 0);
+    const payload = parseOnlyJson(res);
+    assert.deepStrictEqual(
+        payload.results.map(r => r.id),
+        ['eslint_disable', 'ts_ignore', 'any_type', 'test_skip', 'test_only', 'baseline-write'],
+    );
+    const write = payload.results.find(r => r.id === 'baseline-write');
+    assert.strictEqual(write.level, 'ok');
+    assert.ok(fs.existsSync(path.join(dir, '.verify-baseline.json')), '基线文件要真的写出来');
+
+    // 拒绝写入时两种模式同为 exit 1，JSON 里点名原因
+    const files = { ...CLEAN, '.verify-baseline.json': '{"test_only": 0}\n', 'test/only.test.ts': ONLY_CALL };
+    assert.strictEqual(runCli([makeRepo(files), '--baseline']).status, 1);
+    const refused = runCli([makeRepo(files), '--baseline', '--json']);
+    assert.strictEqual(refused.status, 1);
+    const refusal = parseOnlyJson(refused).results.find(r => r.id === 'baseline-write');
+    assert.strictEqual(refusal.level, 'error');
+    assert.match(refusal.message, /test_only 0→1/);
+});
+
+test('--help 退出码 0 且列出全部 flag', () => {
+    const res = runCli(['--help']);
+    assert.strictEqual(res.status, 0);
+    for (const flag of ['--strict', '--baseline', '--json', '--help']) {
+        assert.ok(res.stdout.includes(flag), `--help 应列出 ${flag}`);
+    }
+    assert.match(res.stdout, /退出码/);
 });

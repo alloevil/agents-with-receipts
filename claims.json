@@ -65,6 +65,16 @@
       "verified": "2026-09-08"
     },
     {
+      "id": "json-output-coverage",
+      "claim": "All four CLI tools accept --json and emit one machine-readable object in a shared shape.",
+      "value": "4/4",
+      "metric": "count of CLIs that support --json, out of the total number of CLIs declared in package.json bin",
+      "method": "package.json bin declares four CLIs; each corresponding tools/<name>/index.mjs parses --json and, under that flag, writes a single JSON object to stdout carrying tool, target, summary and results, where every result has id, level (one of ok, warn, error, info) and message. The flag changes nothing else: the default human output and the exit code (1 only when a result is error) are identical with and without it.",
+      "repro": "node -e \"const fs=require('fs');const b=Object.values(require('./package.json').bin);console.log(b.filter(p=>fs.readFileSync(p,'utf8').includes('--json')).length+'/'+b.length)\"",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/README.md#for-agents",
+      "verified": "2026-09-08"
+    },
+    {
       "id": "practice-chapter-count",
       "claim": "The practices handbook has eleven chapters, excluding its index.",
       "value": "11",

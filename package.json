@@ -1,7 +1,7 @@
 {
   "name": "agents-with-receipts",
   "version": "0.1.0",
-  "description": "有据可查的 agentic coding 实践手册 + 四个零依赖 CLI：查 agent 读得懂这个仓库（AGENTS.md 与 agent 基建），查 agent 验得动自己的工作成果（验证回路）",
+  "description": "有据可查的 agentic coding 实践手册 + 四个零依赖 CLI，回答两个问题：agent 读得懂你的仓库吗，agent 在里面验得动自己的工作成果吗。四个 CLI 都支持 --json 机器可读输出",
   "type": "module",
   "license": "MIT",
   "engines": { "node": ">=20" },
@@ -13,7 +13,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "lint:self": "node tools/agentsmd-lint/index.mjs README.md rosetta/README.md practices/*.md",
+    "lint:self": "node tools/agentsmd-lint/index.mjs README.md README.zh-CN.md rosetta/README.md practices/*.md",
     "doctor": "node tools/agents-doctor/index.mjs .",
     "verify": "node tools/verify-doctor/index.mjs ."
   }

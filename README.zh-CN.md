@@ -2,7 +2,7 @@
 
 # agents-with-receipts
 
-**agents-with-receipts** 是一套有据可查的 agentic coding 实践手册，外加四个零依赖 CLI 工具，回答关于一个仓库的两个问题：agent **读得懂**它吗（AGENTS.md、规则、hooks、skills），agent 在里面**验得动**自己的工作成果吗（一条命令跑完全部验证、确定性、失败证据）——写给不想再看无出处结论的工程师。
+**agents-with-receipts** 是一套实践手册加四个零依赖 CLI，回答两个问题：agent **读得懂**你的仓库吗，agent 在里面**验得动**自己的工作成果吗。
 
 <p align="center">
   <img src="./assets/readme/hero.svg" width="100%" alt="Agents with Receipts · 有据可查：agentic coding 实践手册。右侧是一张列着四个板块的收据小票，盖着'有据可查'红章：TOTAL 4 BOARDS · 0 SLOGANS。">
@@ -15,23 +15,43 @@
 
 <p align="center"><strong><a href="https://alloevil.github.io/agents-with-receipts/">→ 在线阅读（GitHub Pages）</a></strong> · 左侧票根导航 · 内容与仓库 Markdown 实时同源</p>
 
-**每条断言都必须回答一个问题：*出处在哪？*** 答案是可以点开的官方文档，而不是口号。
+## 60 秒上手
 
-Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是无出处的断言（"保持 CLAUDE.md 简短"、"先规划再编码"）。这里的做法：对照表**逐格核实官方文档、每格就是链接**；实践地图每条带出处与验证日期；再配上真的能跑的检查器——一个查 agent 能不能读懂这个仓库，一个查 agent 能不能自己验证工作成果。
-
-## 这是什么
-
-一条规则下的四样东西，两条轴——agent **读得懂**这个仓库，agent **验得动**自己的工作成果。[`rosetta/`](rosetta/) 把 Claude Code、OpenAI Codex、Cursor、GitHub Copilot 放在十个概念上对照——项目级/用户级 memory、条件规则、skills、hooks、子代理、OS 沙箱、审批模式、MCP 配置、headless/CI——40 个单元格全部是官方文档链接，2026-08 逐格核实。[`practices/`](practices/) 是十一个章节，每条实践按「场景 → 做法 → 依据 → 边界」展开，09-10 两章承载第二条轴。[`tools/`](tools/) 把这些变成可执行检查：`agentsmd-lint` 查单个 memory 文件，`agents-doctor` 查整仓 agent 基建，`agents-init` 生成只填真实探测到的命令的 AGENTS.md，`verify-doctor` 按六个阶段（0 一条命令跑完全部验证 → 5 自动合入的前置条件）体检仓库的验证回路。[`templates/`](templates/) 是保证过 lint 的骨架。本仓库在 CI 里 dogfood 全套。
-
-## 安装
-
-Node ≥ 20，没有依赖需要装——四个 CLI 都是只用标准库的单文件 Node ESM 脚本。
+两条命令，都对着**你自己的仓库**跑——一条问题一条命令。Node ≥ 20，没有依赖要装。
 
 ```bash
 git clone https://github.com/alloevil/agents-with-receipts.git
-cd agents-with-receipts
-node tools/agentsmd-lint/index.mjs AGENTS.md
+
+# agent 读得懂我的仓库吗？——AGENTS.md、规则、hooks、skills、CI 门禁
+node agents-with-receipts/tools/agents-doctor/index.mjs 你的仓库/
+
+# agent 在里面验得动自己的工作成果吗？——单命令验证、确定性、失败证据
+node agents-with-receipts/tools/verify-doctor/index.mjs 你的仓库/
 ```
+
+每项检查一行，最后一行是汇总。下面是本仓库检查自己的结果：
+
+```text
+agent-ready: ok 4 · warn 0 · error 0
+verify-ready: ok 2 · warn 5 · error 0
+```
+
+凡不是 `ok` 的行都会点明文件、缺哪份证据，以及修法对应的官方文档链接。只有出现 `error` 才以退出码 1 收场，所以两条都能直接进 CI。
+
+## 这是什么
+
+| 板块 | 是什么 | 回答哪条轴 | 规模 |
+|---|---|---|---|
+| [`rosetta/`](rosetta/) | 跨工具对照表：同一概念在 Claude Code、Codex、Cursor、Copilot 里各叫什么、文件放哪、就近规则差在哪 | 读得懂 | 10 概念 × 4 工具 = 40 格，每格都是官方文档链接，2026-08 逐格核实 |
+| [`practices/`](practices/) | 实践手册章节。每条实践按「场景 → 做法 → 依据 → 边界」展开，做法给可复制示例 | 00-08 读得懂，09-10 验得动 | 11 个章节，其中第 00 章是可跟做的 walkthrough |
+| [`tools/`](tools/) | 把这些章节变成能真跑的检查，粒度覆盖单个文件到整个仓库 | 两条轴都覆盖 | 4 个 CLI · 5 条 lint 规则 · 7 项 doctor 检查 · 9 项 verify-doctor 检查 |
+| [`templates/`](templates/) | 从真实项目提炼的 `AGENTS.md` / `RULES.md` 骨架，注释里写明用法 | 读得懂 | 2 份骨架，都保证过 lint |
+
+把四样东西攥在一起的只有一条规矩：没有出处的条目不收。本仓库在 CI 里 dogfood 全套。
+
+## 安装
+
+Node ≥ 20，没有依赖需要装——四个 CLI 都是只用标准库的单文件 Node ESM 脚本，所以上面那条 clone 就是全部安装步骤。
 
 四个工具也在 package.json 的 `bin` 里声明了，`npm link` 之后可以直接用 `agentsmd-lint` / `agents-doctor` / `agents-init` / `verify-doctor` 命令名。
 
@@ -50,6 +70,8 @@ node tools/agentsmd-lint/index.mjs AGENTS.md
 
 只有十分钟的话：读 [`rosetta/`](rosetta/) 的「收敛格局」和「就近规则差异」两节，然后对自己的仓库跑一次 linter。
 
+## rosetta——同一概念，四种叫法
+
 <p align="center">
   <img src="./assets/readme/section-rosetta.svg" width="100%" alt="第一板块 rosetta：跨工具对照，同一概念在 Claude Code、Codex、Cursor、Copilot 里叫什么、放哪。">
 </p>
@@ -62,6 +84,8 @@ node tools/agentsmd-lint/index.mjs AGENTS.md
 ln -s AGENTS.md CLAUDE.md
 ```
 
+## practices——十一个章节，每条带出处
+
 <p align="center">
   <img src="./assets/readme/section-practices.svg" width="100%" alt="第二板块 practices：实践地图，十大类实践加模板，每条断言带官方出处与验证日期。">
 </p>
@@ -69,6 +93,8 @@ ln -s AGENTS.md CLAUDE.md
 [`practices/`](practices/) 是十一个章节的实践手册：[00 可跟做的 walkthrough](practices/00-agent-ready-walkthrough.md)（从零配齐 agent 基建）+ 01-10 章（Memory 文件 / 机制选型 / 任务框架 / 验证闭环 / 权限沙箱 / 上下文管理 / 并行编排 / 安全治理 / 可验证的仓库 / 硬约束下沉）。每条实践按「**场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界**」展开——不是要点索引，是能照着做完的工作流。
 
 配套 [`templates/`](templates/)：从真实项目提炼的 `AGENTS.md` / `RULES.md` 骨架，注释里写明用法，和下面的 linter 配合使用。
+
+## tools——四个可执行的检查
 
 <p align="center">
   <img src="./assets/readme/section-lint.svg" width="100%" alt="第三板块 tools 工具箱：lint 查文件、doctor 查仓库、init 生成起点、verify 查回路，零依赖。">
@@ -85,18 +111,47 @@ ln -s AGENTS.md CLAUDE.md
 
 四个工具发现 error 都以退出码 1 收场，可直接进 CI。`verify-doctor` 查出的阶段缺口默认是 warn（`--strict` 才升为 error），接入它不会让仓库一夜变红。本仓库 dogfood 全套：CI 里跑 lint 门禁 + doctor 体检 + verify-doctor，根目录的 `AGENTS.md` 就是 `agents-init` 生成后手工补充的。
 
-```bash
-# 对你的仓库跑一遍体检
-git clone https://github.com/alloevil/agents-with-receipts.git
-node agents-with-receipts/tools/agents-doctor/index.mjs 你的仓库/
+## 给 agent 的接口
+
+这个仓库的读者一半是 agent。把 `✓ [agents-md] AGENTS.md 存在且通过 agentsmd-lint` 这样一行人类报告丢给 agent、让它正则抠出结论，这不叫输出格式，这叫接口缺失。所以每个 CLI 都有一份机器可读的输出。
+
+四个工具都接受 `--json`，往 stdout 写同一套结构：
+
+```json
+{
+  "tool": "verify-doctor",
+  "target": "/abs/path/to/repo",
+  "summary": { "ok": 2, "warn": 5, "error": 0, "info": 2 },
+  "results": [
+    { "id": "verify-command", "level": "warn", "message": "...", "advice": "...", "stage": 0 }
+  ]
+}
 ```
 
-## 核心立场
+- `target` 是绝对路径。只有 `agentsmd-lint` 例外：它接收多个文件，所以 `target` 是绝对路径数组，且每条结果额外带 `file`。
+- `level` 只有 `ok` / `warn` / `error` / `info` 四种取值，不会出现第五种。
+- `stage` 是 0-5 的整数，只有 `verify-doctor` 输出。`agentsmd-lint` 的条目改带 `line`，命中没有行号时省略该键。
+- `advice` 是可选字段。不适用的字段就是没有这个键，而不是 `null`。
+- 带 `--json` 时 stdout 只有一个 JSON 对象：没有人类输出行，没有 ANSI 转义。
+- 退出码与人类模式完全一致：`0` 干净，当且仅当存在 `error` 级结果时为 `1`，用法错误为 `2`。用法错误时四个工具都只往 stderr 写一行用法、stdout 保持为空，解析方不会读到半个对象。
+- 四个工具也都接受 `--help`，打印用法、全部 flag 与退出码含义，且一律以 0 退出。
+
+检索有两个入口：[`llms.txt`](llms.txt) 索引整个仓库，每份文档一行说明用途；各工具 README 里有自己那套检查 id 的字段表——[agentsmd-lint](tools/agentsmd-lint/)、[agents-doctor](tools/agents-doctor/)、[agents-init](tools/agents-init/)、[verify-doctor](tools/verify-doctor/)。
+
+## 为什么可信
+
+**每条断言都必须回答一个问题：*出处在哪？*** 答案是可以点开的官方文档，而不是口号。
+
+Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是无出处的断言（"保持 CLAUDE.md 简短"、"先规划再编码"）。这里的做法：对照表**逐格核实官方文档、每格就是链接**；实践地图每条带出处与验证日期；再配上真的能跑的检查器——一个查 agent 能不能读懂这个仓库，一个查 agent 能不能自己验证工作成果。
+
+从这条规矩推出四条立场：
 
 1. **证据优先。** 没有出处的断言不收；对照表的每一格都是官方文档链接。
 2. **半衰期意识。** 这个领域几个月一变；每条标注适用工具与日期，过期即删。
 3. **宁缺毋滥。** 手册的价值密度由最差的一条决定。
 4. **可执行 > 可读。** 能写成 lint 规则、模板、脚手架的实践，不要只写成散文。
+
+这里引用的每个数字都可以重算：[`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) 给每个数字都配了它度量的是什么，以及能复现它的那条命令。
 
 ## 什么时候用
 
@@ -109,7 +164,7 @@ node agents-with-receipts/tools/agents-doctor/index.mjs 你的仓库/
 
 ## 什么时候别用
 
-- **想要效率或性能数字。** 这里没有，而且是刻意的。[`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) 只数本仓库自己的产物（40 个带出处单元格、11 个章节、4 个工具、5 条 lint 规则、7 项 doctor 检查、9 项 verify-doctor 检查、0 依赖）。没有任何「照做就更快/更准」的断言——因为没测过。
+- **想要效率或性能数字。** 这里没有，而且是刻意的。[`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) 只数本仓库自己的产物（40 个带出处单元格、11 个章节、4 个工具、5 条 lint 规则、7 项 doctor 检查、9 项 verify-doctor 检查、4/4 个 CLI 支持 `--json`、0 依赖）。没有任何「照做就更快/更准」的断言——因为没测过。
 - **需要保证时效的厂商事实。** 对照表标的是 **2026-08**。这个领域几个月一变——每格都是链接正是为了这个：下判断前把你真正依赖的那一格点开重核一遍。
 - **想让工具直接改你的文件。** 除 `agents-init`（写新的 AGENTS.md，已存在时不加 `--force` 拒绝覆盖）外，其余都只读只报。
 - **想让 `verify-doctor` 顺手把缺口补上。** 它是检测器不是修复器：只报出缺在哪个阶段、缺哪份证据，不动你的测试、配置和 CI。它也不自带 dependency-cruiser 或 betterer——零依赖是这里的规矩——只检测你是否已经采用了这类工具。

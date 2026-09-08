@@ -1,8 +1,30 @@
 # Agents with Receipts
 
-> Agents with Receipts is an evidence-first agentic-coding handbook plus four zero-dependency CLI tools that answer two questions about a repository — can an agent understand it (AGENTS.md and agent infrastructure), and can an agent verify its own work in it (verification loop, determinism, failure evidence) — for engineers who want sourced practices instead of unsourced advice.
+> Agents with Receipts answers two questions about a repository. Can an agent **understand** it — AGENTS.md, conditional rules, hooks, skills, permissions? And can an agent **verify** its own work in it — one command that runs every check, determinism, failure evidence, hard constraints? Four zero-dependency Node CLIs report on both, and every claim in the handbook links to official vendor documentation.
 
 The problem it addresses: most "best practices for Claude Code / Codex / Cursor" collections are unsourced assertions — *keep CLAUDE.md short*, *plan before you code* — with nothing to click. This repository's rule is that every claim must answer "where's the source?" with a link to official vendor documentation, and stale entries get deleted rather than accumulated. It ships three parts covering two axes: `rosetta/`, a cross-tool comparison table where all 40 cells are official-doc links verified 2026-08; `practices/`, eleven chapters structured as scenario → approach → evidence → boundaries, of which 09–10 cover the second axis (a single verification command, determinism, failure artefacts, module boundaries, escape-hatch ratchets, flaky quarantine); and `tools/`, four CLIs (`agentsmd-lint`, `agents-doctor`, `agents-init`, `verify-doctor`) that turn the practices into executable checks — the first three ask whether an agent can understand the repo, the fourth asks whether an agent can verify its own work. Requires Node ≥ 20 and has zero runtime dependencies; install by cloning: `git clone https://github.com/alloevil/agents-with-receipts.git`.
+
+## Agent interface
+
+All four CLIs accept `--help` (always exit 0) and `--json`. Under `--json`, stdout carries exactly one JSON object with no human output and no ANSI, and exit codes are identical to human mode — only an `error`-level result exits 1.
+
+```json
+{
+  "tool": "verify-doctor",
+  "target": "/abs/path/to/repo",
+  "summary": { "ok": 2, "warn": 5, "error": 0, "info": 2 },
+  "results": [
+    { "id": "verify-command", "level": "warn", "message": "...", "advice": "...", "stage": 0 }
+  ]
+}
+```
+
+- `level` is one of `ok`, `warn`, `error`, `info` — there is no fifth value.
+- `advice` is optional; a missing field is omitted rather than emitted as `null`.
+- `stage` (integer 0–5) appears only on `verify-doctor` results. `line` appears on file-level findings — `agentsmd-lint`, and `agents-init`'s self-lint of what it just wrote — and is omitted when a finding has no line number.
+- `agentsmd-lint` reports on files, so its `target` is always an array of absolute paths and every result carries its own `file` key; one JSON object covers a multi-file run.
+- Branch on `summary` and on the stable `results[].id`; treat `message` and `advice` as prose whose wording can change.
+- Per-tool field tables and id lists live in each `tools/<name>/README.md` under 「机器可读输出」.
 
 ## Docs
 - [Site (receipt-stub navigation, renders the repository Markdown)](https://alloevil.github.io/agents-with-receipts/): the reading UI; content is fetched from the repo Markdown at runtime

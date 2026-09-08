@@ -13,6 +13,8 @@ node tools/verify-doctor/index.mjs           # 体检当前目录
 node tools/verify-doctor/index.mjs ../repo   # 体检别的仓库
 node tools/verify-doctor/index.mjs . --strict    # 阶段门缺口也算失败
 node tools/verify-doctor/index.mjs . --baseline  # 立/更新棘轮基线
+node tools/verify-doctor/index.mjs . --json      # 机器可读，见下
+node tools/verify-doctor/index.mjs --help
 ```
 
 只有 `error` 级导致退出码 1，阶段门缺口默认是 `warn`——文档仓库不该因为没有 e2e 就红。`--strict` 把 warn 全部提升为 error，适合已经走完阶段 3 的仓库钉死回归。
@@ -34,6 +36,108 @@ node tools/verify-doctor/index.mjs . --baseline  # 立/更新棘轮基线
 | `flaky-quarantine` | 5 | ok/info/warn/error | `.only` 一律 error（会静默跳过同文件其余测试，绿灯无信息量）；skip 需 `FLAKY: #issue @owner due YYYY-MM-DD` 标注、未过期、进清单、数量不超基线；retry 配置只是掩盖 flaky |
 
 每条结果是 `{ id, stage, level, message, advice? }`，报告按 stage 分组输出，末尾一行总结：`verify-ready: ok X · warn Y · error Z`。
+
+## 机器可读输出
+
+`--json` 让 stdout 只剩一个 JSON 对象（没有人类输出混入，没有 ANSI）。四个 CLI 共用同一个 schema，agent 只需要学一次：
+
+```bash
+node tools/verify-doctor/index.mjs /tmp/demo-app --json
+```
+
+```json
+{
+  "tool": "verify-doctor",
+  "target": "/tmp/demo-app",
+  "summary": {
+    "ok": 8,
+    "warn": 0,
+    "error": 0,
+    "info": 1
+  },
+  "results": [
+    {
+      "id": "verify-command",
+      "level": "ok",
+      "message": "有任务运行器：just；有启动脚本（dev/start/serve）；有聚合验证入口（check/verify/ci/validate）；源文件 1 个 · 测试文件 1 个",
+      "stage": 0
+    },
+    {
+      "id": "determinism",
+      "level": "ok",
+      "message": "测试无硬等待；测试无真实时间/随机源；测试无直接网络调用；验证命令固定了 TZ",
+      "stage": 1
+    },
+    {
+      "id": "failure-artifacts",
+      "level": "ok",
+      "message": "有 CI workflow；CI 上传 artifact；artifact 失败时也上传（if: always()）；测试有机器可解析输出（json/junit）",
+      "stage": 2
+    },
+    {
+      "id": "module-boundary",
+      "level": "ok",
+      "message": "模块边界最强一档：monorepo workspaces（物理包边界，最强一档）",
+      "stage": 3
+    },
+    {
+      "id": "type-strict",
+      "level": "ok",
+      "message": "tsconfig strict: true；noUncheckedIndexedAccess: true",
+      "stage": 3
+    },
+    {
+      "id": "lint-hardness",
+      "level": "info",
+      "message": "无 eslint 配置，跳过 lint 硬度检查；未发现 codegen 入口，跳过生成物 drift 检查",
+      "stage": 3
+    },
+    {
+      "id": "escape-ratchet",
+      "level": "ok",
+      "message": "无 eslint-disable / ts-ignore / any 逃逸口",
+      "stage": 3
+    },
+    {
+      "id": "evidence-template",
+      "level": "ok",
+      "message": "PR 模板要求复现命令与证据",
+      "stage": 4
+    },
+    {
+      "id": "flaky-quarantine",
+      "level": "ok",
+      "message": "无 .only；无 skip 测试；无 retry 配置",
+      "stage": 5
+    }
+  ]
+}
+```
+
+| 字段 | 说明 |
+|---|---|
+| `tool` | 工具名，固定 `verify-doctor` |
+| `target` | 被体检仓库的绝对路径 |
+| `summary` | `ok` / `warn` / `error` / `info` 四个计数，等于 `results` 里各 level 的条数 |
+| `results[].id` | 上表 9 个检查 id，按 stage 升序排列，一次体检各出现一次 |
+| `results[].level` | 只有 `ok` / `warn` / `error` / `info` 四个取值；`--strict` 下 warn 就地变成 error（不只是退出码变红） |
+| `results[].message` | 结论，与人类输出同一句话；一个检查的多条子结论用 `；` 拼接 |
+| `results[].advice` | 可选：怎么修，含官方文档链接。没有可给的建议时省略这个键，不会是 null |
+| `results[].stage` | 阶段门 0–5 的整数（只有 verify-doctor 有这个字段） |
+
+跨工具口径：`level` 四个取值全工具一致；`advice` 可选，缺失时省略这个键而不是给 null；`stage` 只有 verify-doctor 有；`line` 只有 agentsmd-lint 与 agents-init 的自检条目有。
+
+`--baseline --json` 输出的是**基线写入结果**而不是体检报告：`results` 里每个棘轮指标一条（`id` 是指标 key，额外带 `current` 与 `baseline` 两个数字，无旧基线时省略 `baseline`，超基线的判 error），末尾一条 `baseline-write` 说明写入还是拒绝；这些条目的 `stage` 都是 3（棘轮属于阶段 3）。
+
+退出码（`--json` 与默认模式逐字一致）：
+
+| 码 | 含义 |
+|---|---|
+| 0 | 没有 error 级检查（`--baseline` 时表示基线已写入） |
+| 1 | 有 error 级检查（`--strict` 下阶段门缺口也算；`--baseline` 时表示拒绝写入） |
+| 2 | 用法错误（给的路径不是目录）；此时 stderr 一行用法说明，不输出 JSON |
+
+`--help` 列出全部 flag 与退出码含义，退出码恒为 0。
 
 ## 棘轮
 

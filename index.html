@@ -4,23 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agents with Receipts · 有据可查</title>
-<meta name="description" content="有据可查的 agentic coding 实践手册 + 四个零依赖 CLI：两条轴——agent 读得懂这个仓库（AGENTS.md 与 agent 基建），agent 验得动自己的工作成果（验证回路、确定性、失败证据、硬约束）。">
+<meta name="description" content="两个问题，两套体检：agent 读得懂你的仓库吗？agent 验得动自己的工作成果吗？四个零依赖 Node CLI 直接给答案，每条断言都带官方文档出处。">
 <link rel="canonical" href="https://alloevil.github.io/agents-with-receipts/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://alloevil.github.io/agents-with-receipts/">
 <meta property="og:title" content="Agents with Receipts · 有据可查 — evidence-first agentic coding 实践手册">
-<meta property="og:description" content="有据可查的 agentic coding 实践手册 + 四个零依赖 CLI：两条轴——agent 读得懂这个仓库（AGENTS.md 与 agent 基建），agent 验得动自己的工作成果（验证回路、确定性、失败证据、硬约束）。Evidence-first agentic coding: can an agent understand this repo, and can it verify its own work.">
+<meta property="og:description" content="两个问题：agent 读得懂你的仓库吗？agent 验得动自己的工作成果吗？四个零依赖 Node CLI 直接给答案，每条断言都带官方文档出处。Can an agent understand your repo, and verify its own work?">
 <meta property="og:site_name" content="Agents with Receipts">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Agents with Receipts · 有据可查">
-<meta name="twitter:description" content="有据可查的 agentic coding 实践手册：跨工具对照表、实践地图、读得懂（AGENTS.md 检查器）+ 验得动（验证回路检查器）。">
+<meta name="twitter:description" content="agent 读得懂你的仓库吗？验得动自己的工作成果吗？四个零依赖 CLI 直接给答案。">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "agents-with-receipts",
   "alternateName": "Agents with Receipts · 有据可查",
-  "description": "Evidence-first agentic coding handbook plus four zero-dependency Node CLIs — agentsmd-lint, agents-doctor, agents-init and verify-doctor — covering two axes: can an agent understand this repo (AGENTS.md and agent infrastructure), and can an agent verify its own work (verification loop, determinism, failure evidence, hard constraints). Every claim links to official vendor documentation.",
+  "description": "Two questions about your repository: can an agent understand it, and can an agent verify its own work in it? Four zero-dependency Node CLIs — agentsmd-lint, agents-doctor, agents-init and verify-doctor — answer both, and every claim links to official vendor documentation.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS, Linux, Windows",
   "url": "https://alloevil.github.io/agents-with-receipts/",
@@ -53,7 +53,8 @@ body { background: var(--canvas); color: var(--cream); font-family: var(--sans);
 .hero { margin-bottom: 8px; }
 .hero img { width: 100%; display: block; border-radius: 24px; }
 
-.layout { display: grid; grid-template-columns: 264px 1fr; gap: 28px; margin-top: 28px; align-items: start; }
+/* minmax(0,1fr)：长代码行只在 pre 内部横向滚动，不把整页撑宽 */
+.layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 28px; margin-top: 28px; align-items: start; }
 
 /* 左侧：票根导航 */
 nav.stubs { position: sticky; top: 20px; }
@@ -64,6 +65,11 @@ nav.stubs { position: sticky; top: 20px; }
 .stub:hover { border-color: var(--hairline); background: var(--canvas-2); }
 .stub.active { background: var(--paper); color: var(--ink); border-color: var(--paper); }
 .stub.active .no { color: var(--stamp); font-weight: 700; }
+/* 导航：PRACTICES 下挂两条轴的子分组，票根侧留一道虚线轨 */
+.stub-group.lead { margin-bottom: 10px; }
+.stub-group.sub { margin-bottom: 10px; padding-left: 11px; border-left: 1px dashed var(--hairline); }
+.stub-group.sub > .label { letter-spacing: 2px; }
+.stub-group.sub:has(+ .stub-group:not(.sub)) { margin-bottom: 22px; }
 
 /* 右侧：小票纸内容区 */
 main.paper {
@@ -93,6 +99,14 @@ main.paper img { max-width: 100%; }
 .meta-row { font-family: var(--mono); font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
 .meta-row a { color: var(--muted); border-bottom: 1px dotted var(--muted); }
 .stamp-inline { display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--stamp); border: 2px solid var(--stamp); border-radius: 6px; padding: 2px 10px; transform: rotate(-2deg); }
+/* START 页：两条轴并排对照 */
+.axes { display: grid; grid-template-columns: 1fr 1fr; margin: 18px 0 4px; border-top: 2px solid var(--ink); }
+.axes > div { display: flex; flex-direction: column; padding: 15px 22px 4px 0; }
+.axes > div + div { padding-left: 24px; border-left: 1px dashed var(--hairline-paper); }
+.axes .k { font-family: var(--mono); font-size: 12px; letter-spacing: 2px; color: var(--stamp); margin-bottom: 5px; }
+.axes .q { font-size: 17px; line-height: 1.5; color: var(--ink); font-weight: 700; margin-bottom: 6px; }
+.axes .d { font-size: 15px; }
+.axes .r { font-family: var(--mono); font-size: 13px; margin-top: auto; padding-top: 10px; }
 
 footer { margin-top: 42px; text-align: center; font-family: var(--mono); font-size: 13px; color: var(--muted); }
 footer a { color: var(--cream); }
@@ -119,10 +133,15 @@ footer a { color: var(--cream); }
 .about .note { margin-top: 18px; font-size: 13.5px; color: var(--muted); }
 
 @media (max-width: 900px) {
-  .layout { grid-template-columns: 1fr; }
-  nav.stubs { position: static; display: flex; flex-wrap: wrap; gap: 8px; }
-  .stub-group { margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  nav.stubs { position: static; max-height: 44vh; overflow-y: auto; padding-bottom: 4px; border-bottom: 1px dashed var(--hairline); }
+  .stub-group { margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .stub-group.sub { margin-bottom: 14px; }
   .stub-group > .label { width: 100%; }
+  .stub { width: auto; }
+  .axes { grid-template-columns: 1fr; }
+  .axes > div { padding: 14px 0 6px; }
+  .axes > div + div { padding-left: 0; border-left: none; border-top: 1px dashed var(--hairline-paper); }
   main.paper { padding: 32px 22px 44px; }
 }
 </style>
@@ -177,8 +196,10 @@ const GROUPS = [
   { label: 'ROSETTA · 对照', items: [
     { no: 'R', title: '跨工具对照表', file: 'rosetta/README.md' },
   ]},
-  { label: 'PRACTICES · 实践', items: [
+  { label: 'PRACTICES · 实践', cls: 'lead', items: [
     { no: 'IDX', title: '章节索引', file: 'practices/README.md' },
+  ]},
+  { label: '轴一 · 读得懂', cls: 'sub', items: [
     { no: '00', title: '从零配齐（可跟做）', file: 'practices/00-agent-ready-walkthrough.md' },
     { no: '01', title: 'Memory 文件', file: 'practices/01-memory-files.md' },
     { no: '02', title: '机制选型', file: 'practices/02-mechanism-selection.md' },
@@ -188,6 +209,8 @@ const GROUPS = [
     { no: '06', title: '上下文管理', file: 'practices/06-context-management.md' },
     { no: '07', title: '并行与编排', file: 'practices/07-parallel-orchestration.md' },
     { no: '08', title: '安全与治理', file: 'practices/08-security-governance.md' },
+  ]},
+  { label: '轴二 · 验得动', cls: 'sub', items: [
     { no: '09', title: '可验证的仓库', file: 'practices/09-verifiable-repo.md' },
     { no: '10', title: '硬约束下沉', file: 'practices/10-hard-constraints.md' },
   ]},
@@ -208,7 +231,40 @@ const GROUPS = [
 
 const START_HTML = `
 <h1>Agents with Receipts · 有据可查</h1>
-<p><strong>有据可查的 agentic coding 实践手册。</strong>每条断言都必须回答一个问题：<em>出处在哪？</em>答案是可以点开的官方文档，而不是口号。</p>
+<p><strong>这个仓库只回答两个问题。</strong>第一个决定 agent 会不会一开始就走错，第二个决定你敢不敢让它自己合 PR。</p>
+<div class="axes">
+  <div>
+    <p class="k">轴一 · 读得懂</p>
+    <p class="q">agent 读得懂这个仓库吗？</p>
+    <p class="d">AGENTS.md、条件规则、hook、skills、权限边界——仓库里的隐性知识，有没有写成 agent 每次都读得到的文件。</p>
+    <p class="r">→ <code>agents-doctor</code> · <code>agentsmd-lint</code></p>
+  </div>
+  <div>
+    <p class="k">轴二 · 验得动</p>
+    <p class="q">agent 验得动自己的工作成果吗？</p>
+    <p class="d">一条命令跑完全部检查、结果确定、失败留下机器读得懂的证据、约束下沉进结构——agent 改完之后能不能自己判断对不对。</p>
+    <p class="r">→ <code>verify-doctor</code> 按 0–5 阶段</p>
+  </div>
+</div>
+<h2>先给自己的仓库做次体检</h2>
+<p>需要 Node ≥ 20。零依赖，不用 <code>npm install</code>。</p>
+<pre><code>git clone ${REPO}.git
+cd agents-with-receipts
+
+node tools/agents-doctor/index.mjs ../你的仓库   # 轴一：读得懂
+node tools/verify-doctor/index.mjs ../你的仓库   # 轴二：验得动</code></pre>
+<p>输出长这样（本仓库自查的真实输出，<code>…</code> 处有省略）。一行一个检查项：<code>✓</code> 通过、<code>·</code> 不适用、<code>⚠</code> 有缺口，缺口下面那行直接给「怎么补」和官方文档链接。只有 error 级会把退出码变成 1，所以放进 CI 不会一上来就红。</p>
+<pre><code>$ node tools/agents-doctor/index.mjs .
+✓ [agents-md] AGENTS.md 存在且通过 agentsmd-lint
+✓ [claude-md] CLAUDE.md 是指向 AGENTS.md 的软链，单一事实来源
+agent-ready: ok 4 · warn 0 · error 0
+
+$ node tools/verify-doctor/index.mjs .
+── 阶段 2 · 失败可解析 + 证据 artifact
+⚠ [failure-artifacts] 有 CI workflow；CI 不产出 artifact，agent 与人都拿不到失败证据；…
+    → 上传 .artifacts/…并加 if: always()（https://github.com/actions/upload-artifact）
+verify-ready: ok 2 · warn 5 · error 0</code></pre>
+<p><strong>如果你是 agent：</strong>四个 CLI 都有 <code>--help</code> 和 <code>--json</code>。<code>--json</code> 输出同一套结构——<code>tool</code> / <code>target</code> / <code>summary</code> / <code>results[]</code>，<code>level</code> 只有 ok · warn · error · info，退出码与人类模式一致。字段清单见 <a href="llms.txt" target="_blank" rel="noopener">llms.txt</a>。</p>
 <h2>我该从哪看起？</h2>
 <table>
 <tr><th>你想做的事</th><th>从这里进</th></tr>
@@ -221,10 +277,7 @@ const START_HTML = `
 <tr><td><strong>系统过一遍实践全景</strong></td><td><a href="#/practices/README.md">实践地图</a>十一个章节，每条实践带官方出处</td></tr>
 <tr><td><strong>发现内容过期或有错</strong></td><td><a href="#/CONTRIBUTING.md">贡献指南</a>——带官方链接来提 PR，过期条目删除而非堆积</td></tr>
 </table>
-<h2>只有十分钟？</h2>
-<p>读<a href="#/rosetta/README.md">跨工具对照表</a>的「收敛格局」和「就近规则差异」两节，然后对自己的仓库跑一次：</p>
-<pre><code>git clone ${REPO}.git
-node agents-with-receipts/tools/agentsmd-lint/index.mjs 你的仓库/AGENTS.md</code></pre>
+<p>只有十分钟：读<a href="#/rosetta/README.md">跨工具对照表</a>的「收敛格局」和「就近规则差异」两节，再跑一次上面那两条体检命令。</p>
 <h2>核心立场</h2>
 <ol>
 <li><strong>证据优先。</strong>没有出处的断言不收；对照表的每一格都是官方文档链接。</li>
@@ -246,7 +299,7 @@ function currentFile() {
 function renderNav() {
   const cur = currentFile();
   document.getElementById('nav').innerHTML = GROUPS.map(g => `
-    <div class="stub-group">
+    <div class="stub-group${g.cls ? ' ' + g.cls : ''}">
       <p class="label">${g.label}</p>
       ${g.items.map(p => `<a class="stub ${p.file === cur ? 'active' : ''}" href="#/${p.file}"><span class="no">${p.no}</span><span>${p.title}</span></a>`).join('')}
     </div>`).join('');

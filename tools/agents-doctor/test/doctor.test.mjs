@@ -3,7 +3,38 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { diagnose, gitignoreCovers } from '../index.mjs';
+
+const CLI = new URL('../index.mjs', import.meta.url).pathname;
+
+/** 四个 CLI 共用的 level 白名单。 */
+const LEVELS = ['ok', 'warn', 'error', 'info'];
+
+function runCli(args) {
+    return spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf-8' });
+}
+
+/**
+ * 断言 stdout 里只有一个 JSON 对象：没有人类输出混入、没有 ANSI、summary 与 results 自洽。
+ * @returns {{tool: string, target: string, summary: object, results: object[]}}
+ */
+function parseOnlyJson(res) {
+    assert.strictEqual(res.stderr, '', 'JSON 模式不该往 stderr 写东西');
+    assert.match(res.stdout, /^\{[\s\S]*\}\n$/, 'stdout 必须是单个 JSON 对象');
+    assert.doesNotMatch(res.stdout, /\u001b\[/, '不得含 ANSI');
+    const payload = JSON.parse(res.stdout);
+    for (const r of payload.results) {
+        assert.ok(LEVELS.includes(r.level), `level=${r.level} 不在白名单内`);
+        assert.ok(!('advice' in r) || typeof r.advice === 'string', 'advice 缺失就省略键，不输出 null');
+    }
+    assert.deepStrictEqual(
+        LEVELS.map(l => payload.summary[l]),
+        LEVELS.map(l => payload.results.filter(r => r.level === l).length),
+        'summary 必须等于 results 的 level 计数',
+    );
+    return payload;
+}
 
 /** 在 tmpdir 里搭一个假仓库：files 是 相对路径 → 内容 的映射。 */
 function makeRepo(files = {}) {
@@ -140,4 +171,35 @@ test('ci-gate：有 workflow 无门禁 → info 带 advice；无 workflows 目�
     const noDir = diagnose(makeRepo({ 'AGENTS.md': CLEAN_AGENTS }));
     assert.strictEqual(byId(noDir, 'ci-gate').level, 'info');
     assert.match(byId(noDir, 'ci-gate').message, /没有 \.github\/workflows/);
+});
+
+const IDS = ['agents-md', 'claude-md', 'rules', 'hooks', 'skills', 'secrets', 'ci-gate'];
+
+test('--json：stdout 只有一个 JSON 对象，7 个 check id 原样进 results', () => {
+    const dir = makeRepo({ 'AGENTS.md': CLEAN_AGENTS });
+    const payload = parseOnlyJson(runCli([dir, '--json']));
+    assert.strictEqual(payload.tool, 'agents-doctor');
+    assert.strictEqual(payload.target, path.resolve(dir));
+    assert.deepStrictEqual(payload.results.map(r => r.id), IDS);
+    // stage 只属于 verify-doctor，line 只属于 agentsmd-lint
+    assert.ok(payload.results.every(r => !('stage' in r) && !('line' in r)));
+});
+
+test('--json 与人类模式退出码一致', () => {
+    const dirty = makeRepo({ 'AGENTS.md': CLEAN_AGENTS, '.env': 'TOKEN=x\n' }); // secrets → error
+    const clean = makeRepo({ 'AGENTS.md': CLEAN_AGENTS });
+    for (const [dir, code] of [[dirty, 1], [clean, 0]]) {
+        assert.strictEqual(runCli([dir]).status, code, `人类模式 ${dir}`);
+        assert.strictEqual(runCli([dir, '--json']).status, code, `JSON 模式 ${dir}`);
+    }
+    assert.strictEqual(parseOnlyJson(runCli([dirty, '--json'])).summary.error, 1);
+});
+
+test('--help 退出码 0 且列出全部 flag', () => {
+    const res = runCli(['--help']);
+    assert.strictEqual(res.status, 0);
+    for (const flag of ['--json', '--help']) {
+        assert.ok(res.stdout.includes(flag), `--help 应列出 ${flag}`);
+    }
+    assert.match(res.stdout, /退出码/);
 });
