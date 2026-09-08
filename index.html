@@ -4,23 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agents with Receipts · 有据可查</title>
-<meta name="description" content="有据可查的 agentic coding 实践手册：逐格核实的跨工具对照表、有出处的实践地图、AGENTS.md 质量检查器。">
+<meta name="description" content="有据可查的 agentic coding 实践手册 + 四个零依赖 CLI：两条轴——agent 读得懂这个仓库（AGENTS.md 与 agent 基建），agent 验得动自己的工作成果（验证回路、确定性、失败证据、硬约束）。">
 <link rel="canonical" href="https://alloevil.github.io/agents-with-receipts/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://alloevil.github.io/agents-with-receipts/">
 <meta property="og:title" content="Agents with Receipts · 有据可查 — evidence-first agentic coding 实践手册">
-<meta property="og:description" content="有据可查的 agentic coding 实践手册：逐格核实的跨工具对照表、有出处的实践地图、AGENTS.md 质量检查器。Evidence-first agentic coding practices.">
+<meta property="og:description" content="有据可查的 agentic coding 实践手册 + 四个零依赖 CLI：两条轴——agent 读得懂这个仓库（AGENTS.md 与 agent 基建），agent 验得动自己的工作成果（验证回路、确定性、失败证据、硬约束）。Evidence-first agentic coding: can an agent understand this repo, and can it verify its own work.">
 <meta property="og:site_name" content="Agents with Receipts">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Agents with Receipts · 有据可查">
-<meta name="twitter:description" content="有据可查的 agentic coding 实践手册：跨工具对照表、实践地图、AGENTS.md 质量检查器。">
+<meta name="twitter:description" content="有据可查的 agentic coding 实践手册：跨工具对照表、实践地图、读得懂（AGENTS.md 检查器）+ 验得动（验证回路检查器）。">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "agents-with-receipts",
   "alternateName": "Agents with Receipts · 有据可查",
-  "description": "Evidence-first agentic coding handbook plus three zero-dependency Node CLIs — agentsmd-lint, agents-doctor and agents-init — that check a repository's AGENTS.md and agent infrastructure. Every claim links to official vendor documentation.",
+  "description": "Evidence-first agentic coding handbook plus four zero-dependency Node CLIs — agentsmd-lint, agents-doctor, agents-init and verify-doctor — covering two axes: can an agent understand this repo (AGENTS.md and agent infrastructure), and can an agent verify its own work (verification loop, determinism, failure evidence, hard constraints). Every claim links to official vendor documentation.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS, Linux, Windows",
   "url": "https://alloevil.github.io/agents-with-receipts/",
@@ -31,7 +31,7 @@
   "license": "https://opensource.org/licenses/MIT",
   "isAccessibleForFree": true,
   "inLanguage": ["zh-CN", "en"],
-  "keywords": ["AGENTS.md", "AGENTS.md linter", "CLAUDE.md", "agentic coding", "Claude Code", "OpenAI Codex", "Cursor", "GitHub Copilot", "agent hooks", "agent skills", "sandboxing"],
+  "keywords": ["AGENTS.md", "AGENTS.md linter", "CLAUDE.md", "agentic coding", "Claude Code", "OpenAI Codex", "Cursor", "GitHub Copilot", "agent hooks", "agent skills", "sandboxing", "verification loop", "flaky tests", "architecture fitness function", "CI gates"],
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "author": { "@type": "Person", "name": "allo", "url": "https://github.com/alloevil" }
 }
@@ -188,11 +188,14 @@ const GROUPS = [
     { no: '06', title: '上下文管理', file: 'practices/06-context-management.md' },
     { no: '07', title: '并行与编排', file: 'practices/07-parallel-orchestration.md' },
     { no: '08', title: '安全与治理', file: 'practices/08-security-governance.md' },
+    { no: '09', title: '可验证的仓库', file: 'practices/09-verifiable-repo.md' },
+    { no: '10', title: '硬约束下沉', file: 'practices/10-hard-constraints.md' },
   ]},
   { label: 'TOOLS · 工具', items: [
     { no: 'L1', title: 'agentsmd-lint 查文件', file: 'tools/agentsmd-lint/README.md' },
     { no: 'L2', title: 'agents-doctor 查仓库', file: 'tools/agents-doctor/README.md' },
     { no: 'L3', title: 'agents-init 生成起点', file: 'tools/agents-init/README.md' },
+    { no: 'L4', title: 'verify-doctor 查验证回路', file: 'tools/verify-doctor/README.md' },
   ]},
   { label: 'TEMPLATES · 模板', items: [
     { no: 'T1', title: 'AGENTS.md 模板', file: 'templates/AGENTS.md.template', raw: true },
@@ -213,8 +216,9 @@ const START_HTML = `
 <tr><td><strong>给仓库写一份 AGENTS.md / CLAUDE.md</strong></td><td><a href="#/templates/AGENTS.md.template">模板</a>起步，对照 <a href="#/practices/01-memory-files.md">01 Memory 文件</a>的取舍原则</td></tr>
 <tr><td><strong>不知道该用 memory 还是 rule 还是 hook</strong></td><td><a href="#/practices/02-mechanism-selection.md">02 机制选型</a>：两个维度定位五种机制</td></tr>
 <tr><td><strong>检查已有的 AGENTS.md 写得好不好</strong></td><td>跑 <a href="#/tools/agentsmd-lint/README.md">agentsmd-lint</a>（查文件）和 <a href="#/tools/agents-doctor/README.md">agents-doctor</a>（查整仓基建）</td></tr>
+<tr><td><strong>想让 agent 自己验证、敢自动合 PR</strong></td><td>先看 <a href="#/practices/09-verifiable-repo.md">09 可验证的仓库</a>的阶段顺序，再跑 <a href="#/tools/verify-doctor/README.md">verify-doctor</a>：按阶段报出验证回路的缺口</td></tr>
 <tr><td><strong>换工具，或多工具混用</strong></td><td><a href="#/rosetta/README.md">跨工具对照表</a>：同一概念各家叫什么、放哪、就近规则差在哪</td></tr>
-<tr><td><strong>系统过一遍实践全景</strong></td><td><a href="#/practices/README.md">实践地图</a>九个章节，每条实践带官方出处</td></tr>
+<tr><td><strong>系统过一遍实践全景</strong></td><td><a href="#/practices/README.md">实践地图</a>十一个章节，每条实践带官方出处</td></tr>
 <tr><td><strong>发现内容过期或有错</strong></td><td><a href="#/CONTRIBUTING.md">贡献指南</a>——带官方链接来提 PR，过期条目删除而非堆积</td></tr>
 </table>
 <h2>只有十分钟？</h2>

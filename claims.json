@@ -16,20 +16,20 @@
     },
     {
       "id": "zero-dependencies",
-      "claim": "The three CLI tools have no runtime and no development dependencies.",
+      "claim": "The four CLI tools have no runtime and no development dependencies.",
       "value": "0",
       "metric": "count of entries under dependencies plus devDependencies in package.json",
-      "method": "package.json declares neither a dependencies nor a devDependencies key; the tools are single-file Node ESM scripts using only the standard library.",
+      "method": "package.json declares neither a dependencies nor a devDependencies key; the tools are single-file Node ESM scripts using only the standard library. verify-doctor, added for the verification-loop axis, is likewise standard-library only: it detects whether the target repository already uses tools such as dependency-cruiser or betterer instead of bundling them.",
       "repro": "node -e \"const p=require('./package.json');console.log(Object.keys(p.dependencies||{}).length+Object.keys(p.devDependencies||{}).length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/package.json",
       "verified": "2026-09-08"
     },
     {
       "id": "cli-tool-count",
-      "claim": "The repository ships three executable CLI tools.",
-      "value": "3",
+      "claim": "The repository ships four executable CLI tools.",
+      "value": "4",
       "metric": "count of bin entries in package.json",
-      "method": "package.json bin declares agentsmd-lint, agents-doctor and agents-init, each pointing at an existing tools/<name>/index.mjs.",
+      "method": "package.json bin declares agentsmd-lint, agents-doctor, agents-init and verify-doctor, each pointing at an existing tools/<name>/index.mjs.",
       "repro": "node -e \"console.log(Object.keys(require('./package.json').bin).length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/tree/main/tools",
       "verified": "2026-09-08"
@@ -55,11 +55,21 @@
       "verified": "2026-09-08"
     },
     {
-      "id": "practice-chapter-count",
-      "claim": "The practices handbook has nine chapters, excluding its index.",
+      "id": "verify-doctor-check-count",
+      "claim": "verify-doctor runs nine checks over a repository's verification loop.",
       "value": "9",
+      "metric": "distinct check identifiers implemented in tools/verify-doctor/index.mjs",
+      "method": "The check ids verify-command, determinism, failure-artifacts, module-boundary, type-strict, lint-hardness, escape-ratchet, flaky-quarantine and evidence-template appear in both the implementation and the tool's documented check table; every result also carries the stage (0-5) it belongs to.",
+      "repro": "node -e \"const s=require('fs').readFileSync('tools/verify-doctor/index.mjs','utf8');console.log(['verify-command','determinism','failure-artifacts','module-boundary','type-strict','lint-hardness','escape-ratchet','flaky-quarantine','evidence-template'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/tools/verify-doctor/README.md",
+      "verified": "2026-09-08"
+    },
+    {
+      "id": "practice-chapter-count",
+      "claim": "The practices handbook has eleven chapters, excluding its index.",
+      "value": "11",
       "metric": "Markdown files under practices/ other than README.md",
-      "method": "Directory listing: 00-agent-ready-walkthrough plus chapters 01 through 08.",
+      "method": "Directory listing: 00-agent-ready-walkthrough plus chapters 01 through 10.",
       "repro": "ls practices/*.md | grep -v README | wc -l",
       "evidence": "https://github.com/alloevil/agents-with-receipts/tree/main/practices",
       "verified": "2026-09-08"

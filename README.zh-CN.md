@@ -2,7 +2,7 @@
 
 # agents-with-receipts
 
-**agents-with-receipts** 是一套有据可查的 agentic coding 实践手册，外加三个零依赖 CLI 工具，用来检查仓库的 AGENTS.md 与 agent 基建——写给不想再看无出处结论的工程师。
+**agents-with-receipts** 是一套有据可查的 agentic coding 实践手册，外加四个零依赖 CLI 工具，回答关于一个仓库的两个问题：agent **读得懂**它吗（AGENTS.md、规则、hooks、skills），agent 在里面**验得动**自己的工作成果吗（一条命令跑完全部验证、确定性、失败证据）——写给不想再看无出处结论的工程师。
 
 <p align="center">
   <img src="./assets/readme/hero.svg" width="100%" alt="Agents with Receipts · 有据可查：agentic coding 实践手册。右侧是一张列着四个板块的收据小票，盖着'有据可查'红章：TOTAL 4 BOARDS · 0 SLOGANS。">
@@ -17,15 +17,15 @@
 
 **每条断言都必须回答一个问题：*出处在哪？*** 答案是可以点开的官方文档，而不是口号。
 
-Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是无出处的断言（"保持 CLAUDE.md 简短"、"先规划再编码"）。这里的做法：对照表**逐格核实官方文档、每格就是链接**；实践地图每条带出处与验证日期；再配一个真的能跑的 AGENTS.md 检查器。
+Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是无出处的断言（"保持 CLAUDE.md 简短"、"先规划再编码"）。这里的做法：对照表**逐格核实官方文档、每格就是链接**；实践地图每条带出处与验证日期；再配上真的能跑的检查器——一个查 agent 能不能读懂这个仓库，一个查 agent 能不能自己验证工作成果。
 
 ## 这是什么
 
-一条规则下的三样东西。[`rosetta/`](rosetta/) 把 Claude Code、OpenAI Codex、Cursor、GitHub Copilot 放在十个概念上对照——项目级/用户级 memory、条件规则、skills、hooks、子代理、OS 沙箱、审批模式、MCP 配置、headless/CI——40 个单元格全部是官方文档链接，2026-08 逐格核实。[`practices/`](practices/) 是九个章节，每条实践按「场景 → 做法 → 依据 → 边界」展开。[`tools/`](tools/) 把这些变成可执行检查：`agentsmd-lint` 查单个 memory 文件，`agents-doctor` 查整仓 agent 基建，`agents-init` 生成只填真实探测到的命令的 AGENTS.md。[`templates/`](templates/) 是保证过 lint 的骨架。本仓库在 CI 里 dogfood 全套。
+一条规则下的四样东西，两条轴——agent **读得懂**这个仓库，agent **验得动**自己的工作成果。[`rosetta/`](rosetta/) 把 Claude Code、OpenAI Codex、Cursor、GitHub Copilot 放在十个概念上对照——项目级/用户级 memory、条件规则、skills、hooks、子代理、OS 沙箱、审批模式、MCP 配置、headless/CI——40 个单元格全部是官方文档链接，2026-08 逐格核实。[`practices/`](practices/) 是十一个章节，每条实践按「场景 → 做法 → 依据 → 边界」展开，09-10 两章承载第二条轴。[`tools/`](tools/) 把这些变成可执行检查：`agentsmd-lint` 查单个 memory 文件，`agents-doctor` 查整仓 agent 基建，`agents-init` 生成只填真实探测到的命令的 AGENTS.md，`verify-doctor` 按六个阶段（0 一条命令跑完全部验证 → 5 自动合入的前置条件）体检仓库的验证回路。[`templates/`](templates/) 是保证过 lint 的骨架。本仓库在 CI 里 dogfood 全套。
 
 ## 安装
 
-Node ≥ 20，没有依赖需要装——三个 CLI 都是只用标准库的单文件 Node ESM 脚本。
+Node ≥ 20，没有依赖需要装——四个 CLI 都是只用标准库的单文件 Node ESM 脚本。
 
 ```bash
 git clone https://github.com/alloevil/agents-with-receipts.git
@@ -33,7 +33,7 @@ cd agents-with-receipts
 node tools/agentsmd-lint/index.mjs AGENTS.md
 ```
 
-三个工具也在 package.json 的 `bin` 里声明了，`npm link` 之后可以直接用 `agentsmd-lint` / `agents-doctor` / `agents-init` 命令名。
+四个工具也在 package.json 的 `bin` 里声明了，`npm link` 之后可以直接用 `agentsmd-lint` / `agents-doctor` / `agents-init` / `verify-doctor` 命令名。
 
 ## 我该从哪看起？
 
@@ -43,8 +43,9 @@ node tools/agentsmd-lint/index.mjs AGENTS.md
 | **给仓库写一份 AGENTS.md / CLAUDE.md** | [`templates/`](templates/) 骨架起步，对照 [`01 Memory 文件`](practices/01-memory-files.md)的取舍原则 |
 | **不知道该用 memory 还是 rule 还是 hook** | [`02 机制选型`](practices/02-mechanism-selection.md)：两个维度定位五种机制 |
 | **检查已有的 AGENTS.md 写得好不好** | 跑 [`agentsmd-lint`](tools/agentsmd-lint/)（查文件）和 [`agents-doctor`](tools/agents-doctor/)（查整仓基建） |
+| **想让 agent 自己验证、敢自动合 PR** | 先看 [`09 可验证的仓库`](practices/09-verifiable-repo.md) 的阶段顺序，再跑 [`verify-doctor`](tools/verify-doctor/)：按阶段报出验证回路的缺口 |
 | **在换工具，或 Claude Code / Codex / Cursor 混着用** | [`rosetta/`](rosetta/) 对照表：同一概念各家叫什么、放哪、就近规则差在哪 |
-| **系统过一遍 agentic coding 的实践全景** | [`practices/`](practices/) 九个章节，每条实践「场景→做法→依据→边界」带官方出处 |
+| **系统过一遍 agentic coding 的实践全景** | [`practices/`](practices/) 十一个章节，每条实践「场景→做法→依据→边界」带官方出处 |
 | **发现内容过期或有错** | [CONTRIBUTING.md](CONTRIBUTING.md)——带官方链接来提 PR，过期条目删除而非堆积 |
 
 只有十分钟的话：读 [`rosetta/`](rosetta/) 的「收敛格局」和「就近规则差异」两节，然后对自己的仓库跑一次 linter。
@@ -62,26 +63,27 @@ ln -s AGENTS.md CLAUDE.md
 ```
 
 <p align="center">
-  <img src="./assets/readme/section-practices.svg" width="100%" alt="第二板块 practices：实践地图，八大类实践加模板，每条断言带官方出处与验证日期。">
+  <img src="./assets/readme/section-practices.svg" width="100%" alt="第二板块 practices：实践地图，十大类实践加模板，每条断言带官方出处与验证日期。">
 </p>
 
-[`practices/`](practices/) 是九个章节的实践手册：[00 可跟做的 walkthrough](practices/00-agent-ready-walkthrough.md)（从零配齐 agent 基建）+ 01-08 章（Memory 文件 / 机制选型 / 任务框架 / 验证闭环 / 权限沙箱 / 上下文管理 / 并行编排 / 安全治理）。每条实践按「**场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界**」展开——不是要点索引，是能照着做完的工作流。
+[`practices/`](practices/) 是十一个章节的实践手册：[00 可跟做的 walkthrough](practices/00-agent-ready-walkthrough.md)（从零配齐 agent 基建）+ 01-10 章（Memory 文件 / 机制选型 / 任务框架 / 验证闭环 / 权限沙箱 / 上下文管理 / 并行编排 / 安全治理 / 可验证的仓库 / 硬约束下沉）。每条实践按「**场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界**」展开——不是要点索引，是能照着做完的工作流。
 
 配套 [`templates/`](templates/)：从真实项目提炼的 `AGENTS.md` / `RULES.md` 骨架，注释里写明用法，和下面的 linter 配合使用。
 
 <p align="center">
-  <img src="./assets/readme/section-lint.svg" width="100%" alt="第三板块 tools 工具箱：lint 查文件、doctor 查仓库、init 生成起点，零依赖。">
+  <img src="./assets/readme/section-lint.svg" width="100%" alt="第三板块 tools 工具箱：lint 查文件、doctor 查仓库、init 生成起点、verify 查回路，零依赖。">
 </p>
 
-把实践变成可执行检查的三件套。零依赖，Node ≥ 20：
+把实践变成可执行检查的四件套。零依赖，Node ≥ 20：
 
 | 工具 | 一条命令 | 干什么 |
 |---|---|---|
 | [`agentsmd-lint`](tools/agentsmd-lint/) | `node tools/agentsmd-lint/index.mjs AGENTS.md` | 查**单个文件**质量：行数超标 / 占位符 / 模糊措辞 / 引用不存在的 npm 脚本 / 空标题节 |
 | [`agents-doctor`](tools/agents-doctor/) | `node tools/agents-doctor/index.mjs .` | 查**整个仓库**的 agent 基建：AGENTS.md 质量、CLAUDE.md 软链/漂移、四工具的规则/hooks/skills、secrets 是否 gitignore、CI 门禁 |
 | [`agents-init`](tools/agents-init/) | `node tools/agents-init/index.mjs . --link` | 探测 package.json / Cargo.toml / pyproject / go.mod，生成**预填真实命令**的 AGENTS.md 起点 + CLAUDE.md 软链，产物自动过 lint |
+| [`verify-doctor`](tools/verify-doctor/) | `node tools/verify-doctor/index.mjs .` | 查 agent 能不能在这个仓库里**自己验证工作成果**：单命令验证回路、确定性、失败证据、模块边界、类型严格度、lint 硬度、逃逸口棘轮、flaky 隔离、证据模板——9 项检查按阶段 0-5 分组输出 |
 
-三个工具发现 error 都以退出码 1 收场，可直接进 CI。本仓库 dogfood 全套：CI 里跑 lint 门禁 + doctor 体检，根目录的 `AGENTS.md` 就是 `agents-init` 生成后手工补充的。
+四个工具发现 error 都以退出码 1 收场，可直接进 CI。`verify-doctor` 查出的阶段缺口默认是 warn（`--strict` 才升为 error），接入它不会让仓库一夜变红。本仓库 dogfood 全套：CI 里跑 lint 门禁 + doctor 体检 + verify-doctor，根目录的 `AGENTS.md` 就是 `agents-init` 生成后手工补充的。
 
 ```bash
 # 对你的仓库跑一遍体检
@@ -102,20 +104,22 @@ node agents-with-receipts/tools/agents-doctor/index.mjs 你的仓库/
 - 在换工具或多工具混用（Claude Code / Codex / Cursor / Copilot）：`rosetta/` 告诉你同一概念各家叫什么、文件放哪、monorepo 里「就近优先」的语义差在哪。
 - 已经有 AGENTS.md，想知道写得好不好——linter 会抓出模板残留的占位符、引用了不存在的 npm 脚本、agent 无法执行的模糊措辞、空标题节、行数超标。
 - 团队上手前先做一次仓库体检：`agents-doctor` 报告 memory 文件质量、CLAUDE.md 漂移、四家的 rules/hooks/skills 配了哪些、敏感文件是否 gitignore、CI 有没有门禁。
+- 准备让 agent 自己合 PR，需要先知道验证回路撑不撑得住：`verify-doctor` 按阶段报出——有没有一条命令跑完全部验证、这条命令是否确定、失败有没有留下 agent 能直接读的证据、类型与 lint 的逃逸口有没有被棘轮压着只降不升。
 - 在写团队规范，需要每条规则都带一个同事能点开核实的出处。
 
 ## 什么时候别用
 
-- **想要效率或性能数字。** 这里没有，而且是刻意的。[`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) 只数本仓库自己的产物（40 个带出处单元格、9 个章节、3 个工具、5 条 lint 规则、7 项 doctor 检查、0 依赖）。没有任何「照做就更快/更准」的断言——因为没测过。
+- **想要效率或性能数字。** 这里没有，而且是刻意的。[`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) 只数本仓库自己的产物（40 个带出处单元格、11 个章节、4 个工具、5 条 lint 规则、7 项 doctor 检查、9 项 verify-doctor 检查、0 依赖）。没有任何「照做就更快/更准」的断言——因为没测过。
 - **需要保证时效的厂商事实。** 对照表标的是 **2026-08**。这个领域几个月一变——每格都是链接正是为了这个：下判断前把你真正依赖的那一格点开重核一遍。
 - **想让工具直接改你的文件。** 除 `agents-init`（写新的 AGENTS.md，已存在时不加 `--force` 拒绝覆盖）外，其余都只读只报。
+- **想让 `verify-doctor` 顺手把缺口补上。** 它是检测器不是修复器：只报出缺在哪个阶段、缺哪份证据，不动你的测试、配置和 CI。它也不自带 dependency-cruiser 或 betterer——零依赖是这里的规矩——只检测你是否已经采用了这类工具。
 - **Node < 20**，或者想要一个已发布的 npm 包——工具以源码形式随仓库分发。
-- **想看模型选型或 prompt 工程的观点。** 范围是仓库侧配置：memory 文件、规则、skills、hooks、沙箱、审批、MCP、headless。
+- **想看模型选型或 prompt 工程的观点。** 范围是仓库侧的两条轴：agent 读得懂这个仓库吗（memory 文件、规则、skills、hooks、沙箱、审批、MCP、headless），agent 在里面验得动自己的工作成果吗（验证命令、确定性、失败证据、模块边界、逃逸口棘轮、flaky 隔离）。
 
 ## 常见问题
 
-**三个工具的区别是什么？**
-作用范围不同。`agentsmd-lint` 查**单个 memory 文件的内容**：行数、未填的占位符、模糊措辞、引用了同目录 package.json 里不存在的脚本、空标题节。`agents-doctor` 查整个仓库里**围绕这些文件的基建**：AGENTS.md 质量、CLAUDE.md 是软链还是已漂移的副本、四家的 rules/hooks/skills 目录各配了几个、敏感文件是否被 gitignore 覆盖、CI 里有没有 lint 门禁。`agents-init` 面向还没有 AGENTS.md 的仓库，从探测到的构建工具生成一份，然后对自己的产物跑一遍 lint。
+**四个工具的区别是什么？**
+作用范围不同。`agentsmd-lint` 查**单个 memory 文件的内容**：行数、未填的占位符、模糊措辞、引用了同目录 package.json 里不存在的脚本、空标题节。`agents-doctor` 查整个仓库里**围绕这些文件的基建**：AGENTS.md 质量、CLAUDE.md 是软链还是已漂移的副本、四家的 rules/hooks/skills 目录各配了几个、敏感文件是否被 gitignore 覆盖、CI 里有没有 lint 门禁。`agents-init` 面向还没有 AGENTS.md 的仓库，从探测到的构建工具生成一份，然后对自己的产物跑一遍 lint。`verify-doctor` 换的是另一条轴：它不问仓库有没有把自己解释给 agent，而问仓库有没有让 agent 能**自己检查自己**——一条命令跑完全部验证、确定性、失败证据、模块边界、类型与 lint 硬度、逃逸口棘轮、flaky 隔离，以及 PR 流程里的证据模板。
 
 **为什么 `agents-init` 只写探测到的命令？**
 因为 memory 文件里编造的命令比没有 memory 文件更糟——agent 照着跑、跑失败，而这个文件刚刚教给它一件假事。它读 package.json scripts、Cargo.toml、pyproject.toml、go.mod，只收真实存在的条目（`packageManager` 含 pnpm/yarn 时换前缀），pyproject 里没有 pytest 痕迹就只留注释而不编命令；写完自动跑 agentsmd-lint，有 error 级命中就退出码 1。

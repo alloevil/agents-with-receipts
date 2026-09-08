@@ -22,3 +22,5 @@ jobs:
         run: node tools/agentsmd-lint/index.mjs AGENTS.md
       - name: Repo health (agents-doctor)
         run: node tools/agents-doctor/index.mjs .
+      - name: Verification loop (verify-doctor)
+        run: node tools/verify-doctor/index.mjs .
