@@ -413,7 +413,7 @@ test('STACK_IDS 就是文档承诺的 5 个技术栈标记', () => {
     assert.deepStrictEqual(STACK_IDS, ['js-ts', 'python', 'go', 'rust', 'java-kotlin']);
 });
 
-test('Rust：内联 #[test] 的源文件同时算源与测试，unwrap/expect 进逃逸口', () => {
+test('Rust：内联 #[test] 源文件既算测试，逃逸口只数生产区、测试区的 unwrap 不算', () => {
     const checks = diagnose(makeRepo(RUST_REPO));
     const cmd = byId(checks, 'verify-command');
     assert.match(cmd.message, /技术栈 Rust/);
@@ -422,10 +422,11 @@ test('Rust：内联 #[test] 的源文件同时算源与测试，unwrap/expect �
     assert.doesNotMatch(cmd.message, /没有任务运行器/);
     assert.match(cmd.message, /Cargo\.toml（cargo test \/ cargo clippy）/);
 
-    // 对一个没有 JS 的仓库报「无 ts-ignore / any」是零信息量的绿灯
+    // RUST_REPO 有两处 unwrap：main() 里的生产 unwrap 要算，测试块 mod tests 里的不算——
+    // 否则棘轮被测试惯用的 unwrap 噪音主导，甚至能「加生产 unwrap、删测试 unwrap」蒙混过关
     const esc = byId(checks, 'escape-ratchet');
     assert.equal(esc.level, 'warn');
-    assert.match(esc.message, /unwrap\/expect=2/);
+    assert.match(esc.message, /unwrap\/expect=1/);
     assert.doesNotMatch(esc.message, /eslint-disable/);
 
     // 「无测试文件」这个前提是错的，后续检查不该再借它跳过
@@ -548,7 +549,7 @@ test('棘轮：Rust 仓库只写该生态的指标，旧基线缺新指标时不
     assert.equal(set.written, true);
     assert.deepEqual(set.rows.map(r => r.key), ['rust_unwrap', 'rust_unsafe', 'rust_allow', 'test_skip']);
     const baseline = JSON.parse(fs.readFileSync(path.join(dir, '.verify-baseline.json'), 'utf-8'));
-    assert.equal(baseline.rust_unwrap, 2);
+    assert.equal(baseline.rust_unwrap, 1);
     assert.equal('eslint_disable' in baseline, false, 'Rust 仓库不该被写入一堆 0 的 JS 指标');
     assert.equal(byId(diagnose(dir), 'escape-ratchet').level, 'ok');
 
@@ -600,4 +601,19 @@ test('不受支持的技术栈（Ruby）：没有探针的检查一律 info，�
     for (const c of checks) {
         if (c.level === 'ok') assert.ok(LANG_AGNOSTIC.has(c.id), `${c.id} 在无探针的仓库里报了 ok：${c.message}`);
     }
+});
+
+test('兜底遍历跳过依赖/构建目录：非 git 仓库的 .venv 逃逸口不算在用户头上', () => {
+    // makeRepo 不 git init，走的正是递归兜底那条路（git ls-files 会尊重 .gitignore，兜底不会）
+    const venv = Array.from({ length: 50 }, () => 'x = 1  # type: ignore').join('\n');
+    const checks = diagnose(makeRepo({
+        'pyproject.toml': '[project]\nname = "demo"\n',
+        'src/app.py': 'def f():\n    return 1\n',
+        '.venv/lib/python3.12/site-packages/dep/mod.py': venv,
+        'node_modules/pkg/index.js': 'const x: any = 1; // eslint-disable-line\n',
+    }));
+    const esc = byId(checks, 'escape-ratchet');
+    // 用户自己的代码零逃逸口；.venv / node_modules 里的一律不算
+    assert.match(esc.message, /type-ignore\/noqa=0/);
+    assert.doesNotMatch(esc.message, /eslint-disable/);
 });

@@ -90,7 +90,11 @@ const CONVENTIONAL_ENTRIES = [
 const MANIFEST_RE = /(^|\/)(package\.json|pyproject\.toml|requirements[^/]*\.txt|Gemfile|go\.mod)$/;
 
 /** 递归兜底时跳过的目录。 */
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'vendor', 'target']);
+const SKIP_DIRS = new Set([
+    'node_modules', '.git', 'dist', 'build', 'vendor', 'target',
+    '.venv', 'venv', '.env', '__pycache__', '.tox', '.nox', '.mypy_cache',
+    '.pytest_cache', '.ruff_cache', '.gradle', '.idea', '.next', 'coverage', '.svn',
+]);
 
 /**
  * 棘轮受控指标：每一项都是「agent 会用来刷绿的手段」，只允许下降。
@@ -191,6 +195,41 @@ export function listFiles(root) {
 }
 
 /**
+ * 把 Rust 源文件切成生产区与内联测试区。Rust 的测试惯例是内联在源文件里
+ * （`#[cfg(test)] mod tests { … }` 或 `#[test] fn … { … }`），逃逸口只该看生产区、
+ * 确定性/flaky 只该看测试区——否则测试里惯用的 `.unwrap()` 会被算成生产逃逸口，
+ * 让棘轮被测试噪音主导，甚至可以「加一个生产 unwrap、删一个测试 unwrap」蒙混过关。
+ * 花括号配平是启发式的：字符串/注释里的花括号可能让切分略有偏差，对 warn 级检查可接受。
+ * @param {string} text 源文件内容
+ * @returns {{prod: string, test: string}} 生产区与测试区文本
+ */
+function splitRustRegions(text) {
+    const attr = /#\[cfg\(test\)\]|#\[(?:\w+::)?test\]/g;
+    let prod = '';
+    let test = '';
+    let cursor = 0;
+    let m;
+    while ((m = attr.exec(text))) {
+        if (m.index < cursor) continue;
+        prod += text.slice(cursor, m.index);
+        const brace = text.indexOf('{', m.index);
+        if (brace === -1) { test += text.slice(m.index); cursor = text.length; break; }
+        let depth = 0;
+        let k = brace;
+        for (; k < text.length; k++) {
+            const c = text[k];
+            if (c === '{') depth++;
+            else if (c === '}' && --depth === 0) { k++; break; }
+        }
+        test += text.slice(m.index, k);
+        cursor = k;
+        attr.lastIndex = k;
+    }
+    prod += text.slice(cursor);
+    return { prod, test };
+}
+
+/**
  * 一次体检共享的上下文：文件清单 + 技术栈识别 + 带缓存的读取与计数。
  * @param {string} root 仓库根目录绝对路径
  */
@@ -231,14 +270,37 @@ function createContext(root) {
     /** 路径匹配 fileRe 的文件子集。 */
     const pick = fileRe => files.filter(f => fileRe.test(f));
 
-    /** 在给定文件集合里统计 re 的命中次数。 */
+    /** 保证正则带 g 标志，可安全用于 String.match 全量计数。 */
+    const globalize = re => (re.flags.includes('g') ? re : new RegExp(re.source, `${re.flags}g`));
+
+    /** 在给定文件集合里统计 re 的命中次数（整文件）。 */
     const count = (list, re) => {
+        const g = globalize(re);
         let n = 0;
         for (const rel of list) {
-            const hits = read(rel).match(new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`));
+            const hits = read(rel).match(g);
             if (hits) n += hits.length;
         }
         return n;
+    };
+
+    /** 文件属于哪个技术栈（按扩展名），认不出返回 undefined。 */
+    const stackOf = rel => STACK_IDS.find(s => STACK_FILE_RE[s].test(rel));
+
+    const regionCache = new Map();
+    /**
+     * 文件在给定 scope（'src' | 'tests'）下真正要扫描的文本。Rust 内联测试必须切开，
+     * 其余语言测试与源码分文件，整篇返回（清单已按 src/tests 分好）。
+     */
+    const regionText = (rel, scope) => {
+        if (stackOf(rel) !== 'rust') return read(rel);
+        const key = `${rel}|${scope}`;
+        if (!regionCache.has(key)) {
+            const { prod, test } = splitRustRegions(read(rel));
+            regionCache.set(`${rel}|src`, prod);
+            regionCache.set(`${rel}|tests`, test);
+        }
+        return regionCache.get(key);
     };
 
     const stackCache = new Map();
@@ -254,17 +316,36 @@ function createContext(root) {
         return list;
     };
 
-    /** 按技术栈分别用 reMap[stack] 统计命中次数，只算仓库里真的存在的栈。 */
+    /** 按技术栈分别用 reMap[stack] 统计命中次数，只算真的存在的栈，并按区域切分文本。 */
     const countByStack = (scope, reMap) => {
         let n = 0;
-        for (const stack of stacks) if (reMap[stack]) n += count(stackFiles(stack, scope), reMap[stack]);
+        for (const stack of stacks) {
+            const re = reMap[stack];
+            if (!re) continue;
+            const g = globalize(re);
+            for (const rel of stackFiles(stack, scope)) {
+                const hits = regionText(rel, scope).match(g);
+                if (hits) n += hits.length;
+            }
+        }
+        return n;
+    };
+
+    /** 跨栈按测试区域统计 re，用于与语言无关的网络调用扫描。 */
+    const countTests = re => {
+        const g = globalize(re);
+        let n = 0;
+        for (const rel of tests) {
+            const hits = regionText(rel, 'tests').match(g);
+            if (hits) n += hits.length;
+        }
         return n;
     };
 
     /** 路径匹配 fileRe 的任一文件内容命中 contentRe。 */
     const inAny = (fileRe, contentRe) => pick(fileRe).some(rel => contentRe.test(read(rel)));
 
-    return { root, files, stacks, tests, srcs, read, has, pick, count, stackFiles, countByStack, inAny };
+    return { root, files, stacks, tests, srcs, read, has, pick, count, countTests, stackFiles, countByStack, inAny };
 }
 
 /**
@@ -401,7 +482,7 @@ function checkDeterminism(ctx) {
             findings.push({ level: 'ok', message: '测试无真实时间/随机源' });
         }
 
-        const net = ctx.count(ctx.tests, /fetch\(|axios\.|requests\.(get|post)|http\.get|reqwest::/g);
+        const net = ctx.countTests(/fetch\(|axios\.|requests\.(get|post)|http\.get|reqwest::/g);
         const MOCK_RE = /msw|nock|vcr|responses|httpretty|mock-server|undici[^\n]*MockAgent|httpmock|wiremock/;
         const mocked = ctx.inAny(MANIFEST_RE, MOCK_RE) || ctx.tests.some(f => MOCK_RE.test(ctx.read(f)));
         if (net > 0 && !mocked) {

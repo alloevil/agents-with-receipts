@@ -23,7 +23,7 @@ node tools/verify-doctor/index.mjs --help
 
 只有 `error` 级导致退出码 1，阶段门缺口默认是 `warn`——文档仓库不该因为没有 e2e 就红。`--strict` 把 warn 全部提升为 error，适合已经走完阶段 3 的仓库钉死回归。
 
-文件清单优先用 `git ls-files`（尊重 `.gitignore`、避开构建产物），不是 git 仓库时递归兜底并跳过 `node_modules` / `dist` / `build` / `vendor` / `target`。
+文件清单优先用 `git ls-files`（尊重 `.gitignore`、避开构建产物），不是 git 仓库时递归兜底并跳过 `node_modules` / `dist` / `build` / `vendor` / `target` / `.venv` / `venv` / `__pycache__` / `.tox` / `.gradle` 等依赖与构建目录（否则非 git 仓库会把依赖里的逃逸口算在用户头上）。
 
 测试文件按**路径 + 内容**双路识别：路径规则（`tests/` `spec/` `__tests__/` `e2e/` 目录、`*.test.*`、`*_test.go`、`test_*.py`，Maven/Gradle 的 `src/test/java/`、`src/test/kotlin/` 由 `tests?/` 这一分支覆盖）之外，还探测内容——`.rs` 文件含 `#[test]` / `#[cfg(test)]`，`.java`·`.kt` 文件含 `@Test` / `@ParameterizedTest`。Rust 的主流约定是测试内联在源文件里，只看路径会把这类仓库判成「零测试」。同一个文件既是源又是测试时（Rust 常态）**同时进两个集合**，否则逃逸口统计会漏掉整个仓库。
 
@@ -178,7 +178,7 @@ node tools/verify-doctor/index.mjs /tmp/demo-app --json
   "eslint_disable": 12,
   "ts_ignore": 3,
   "any_type": 41,
-  "rust_unwrap": 66,
+  "rust_unwrap": 3,
   "rust_unsafe": 0,
   "rust_allow": 7,
   "test_skip": 2,
@@ -215,7 +215,7 @@ node tools/verify-doctor/index.mjs /tmp/demo-app --json
 - **只认 5 个技术栈**：JS/TS · Python · Go · Rust · Java/Kotlin。C/C++、C#、Ruby、PHP、Swift、Elixir、Zig 等一概不认——这些仓库的 `escape-ratchet` / `type-strict` / `lint-hardness` 报 `info`「不适用」，`determinism` 与 `flaky-quarantine` 里依赖语言探针的那几条子结论同样报 `info`（一条 sleep 探针都没有就说「测试无硬等待」，正是本工具要消灭的假绿灯）。`.rb` / `.swift` 仍计入源文件与测试文件总数，但没有任何针对性探测。
 - **monorepo 多栈混合只做加法**：识别到的栈会各自跑各自的探测，但报告是仓库级的一份，不按子目录分组。「后端 Go 已经上了 golangci-lint、前端 TS 没配 eslint」这种局部差异会被压成同一条结论。子包各自跑一次 verify-doctor 更准。
 - **自建构体系看不见**：只认 justfile / Makefile / Taskfile 与 5 个生态的标准清单文件。Bazel、Buck、Pants、Nx、Turborepo、CMake，以及仓库自己写的 `scripts/ci.sh`、`checkall.sh`，都不算「聚合入口」——会被判成缺口，实际可能已经有一条命令跑完全部检查。
-- **文件粒度，不是语法粒度**：`escape-ratchet` 与 `determinism` 按文件计数。Rust 的测试与实现同在一个文件，所以生产代码里的 `Instant::now` 会被算进「测试用真实时钟」，测试代码里的 `unwrap()` 也会被算进逃逸口——只统计 `#[cfg(test)]` 块内外的哪一半需要真正的语法分析，本工具不做。
+- **Rust 内联测试按启发式括号扫分区**：Rust 的测试与实现同在一个文件，本工具用花括号配平把 `#[cfg(test)]` / `#[test]` 块切出来——`escape-ratchet` 只数生产区的 `unwrap()`，`determinism` 只看测试区的时钟与随机，测试里惯用的 `unwrap()` 不再被算成生产逃逸口。但配平是启发式的：字符串或注释里的花括号可能让切分偏几行，不是真正的语法分析。其余语言测试与源码分属不同文件，不涉及这个切分。
 - **正则会误判**：注释与字符串里的 `unwrap()`、宏生成的测试、条件编译掉的代码，都照样计数；`retries: 3` 这种配置字段会被当成测试 retry。数字用来看趋势（棘轮只允许下降），不要当精确统计。
 - **不执行任何东西**：不跑 `cargo test`、不跑 `pytest`、不装依赖。「验证命令存在」不等于「验证命令能跑通」，更不等于「测试真的在断言什么」。
 - **`type-strict` 对编译型语言不下结论**：Go / Rust / Java 的类型由编译器强制，本工具不去判断 `unsafe` 之外的类型宽松度，也不看 `#[allow]` 关掉了哪些类型相关 lint。
