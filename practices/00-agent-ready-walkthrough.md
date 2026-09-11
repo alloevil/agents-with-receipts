@@ -1,6 +1,6 @@
 # 00 — 从零配齐 agent 基建（可跟做）
 
-> 适用工具：Claude Code · Codex CLI · Cursor · GitHub Copilot · 验证于 2026-08
+> 适用工具：Claude Code · Codex CLI · Cursor · GitHub Copilot · 验证于 2026-09
 
 本章是一条端到端路径：给一个已有代码的仓库，配齐 memory 文件、条件规则、hook 拦截和 CI 检查。每一步以真实工具行为收尾——验证不通过就停在原地修，不要带病进下一步。示例设定为 Node 20 + npm 的订单服务仓库，其它技术栈只需替换命令表内容。
 
@@ -46,7 +46,7 @@ codex --ask-for-approval never "跑测试的命令是什么？单个文件怎么
 
 合格标准：回答逐字命中 `npm test` 与 `node --test test/orders.test.mjs`，而不是给出通用猜测。
 
-**依据**：[agents.md 规范](https://agents.md)定义了跨工具的 AGENTS.md 位置与用途；Codex [在开始任何工作前读取 AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)，官方文档同页给出这种「问 agent 复述指令」的验证方式。
+**依据**：[agents.md 规范](https://agents.md)定义了跨工具的 AGENTS.md 位置与用途；Codex [在开始任何工作前读取 AGENTS.md](https://developers.openai.com/codex/guides/agents-md)，官方文档同页给出这种「问 agent 复述指令」的验证方式。
 
 **边界**：不要用 LLM 一键生成后原样提交——先写 20-30 行真实事实，之后 agent 每犯一次错补一条，从没被用到的条目删掉。
 

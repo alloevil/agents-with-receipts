@@ -9,10 +9,20 @@
       "claim": "Every cell of the cross-tool comparison table is a link to official vendor documentation.",
       "value": "40/40",
       "metric": "cells in the main table of rosetta/README.md that contain an official-documentation link, out of total cells",
-      "method": "The main table has 10 concept rows and 4 tool columns, giving 40 cells; counting Markdown links to external URLs inside those rows yields 40. Cell contents were verified against vendor docs in 2026-08 by the repository author.",
-      "repro": "python3 -c \"import re;m=open('rosetta/README.md').read().split('## 主对照表')[1].split('## 2026-08')[0];rows=[l for l in m.splitlines() if l.startswith('| **')];print(sum(len(l.strip().strip('|').split('|'))-1 for l in rows), len(re.findall(r'\\]\\(https?://', m)))\"",
+      "method": "The main table has 10 concept rows and 4 tool columns, giving 40 cells; counting Markdown links to external URLs inside those rows yields 40. Cell contents were first verified against vendor docs in 2026-08 and re-verified cell by cell on 2026-09-11, which corrected four Codex cells (skills scopes, hook event count, sandbox modes vs per-OS implementations, subagent location), narrowed four Cursor/Copilot cells to what their cited pages actually state, and moved every Codex citation to the canonical developers.openai.com/codex host.",
+      "repro": "python3 -c \"import re;m=open('rosetta/README.md').read().split('## 主对照表')[1].split('## 2026-09')[0];rows=[l for l in m.splitlines() if l.startswith('| **')];print(sum(len(l.strip().strip('|').split('|'))-1 for l in rows), len(re.findall(r'\\]\\(https?://', m)))\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/rosetta/README.md",
-      "verified": "2026-09-08"
+      "verified": "2026-09-11"
+    },
+    {
+      "id": "rosetta-codex-host-canonical",
+      "claim": "Every Codex cell in the main comparison table links to the canonical developers.openai.com/codex page rather than the superseded learn.chatgpt.com path.",
+      "value": "10/10",
+      "metric": "Codex-column links in the main table of rosetta/README.md that point at developers.openai.com/codex/, out of the 10 concept rows",
+      "method": "The 2026-09-11 re-verification found the previously cited host superseded: the docs stubs inside openai/codex point at developers.openai.com/codex/*, which serves the pages the table describes. All ten Codex cells were repointed to that host, and the four cells whose wording those pages contradicted were rewritten (skills scopes are REPO/USER/ADMIN/SYSTEM, hooks list ten events, --sandbox takes read-only/workspace-write/danger-full-access while Seatbelt/bubblewrap/Windows are per-OS implementations, and custom agents live in .codex/agents/ or ~/.codex/agents/).",
+      "repro": "python3 -c \"m=open('rosetta/README.md').read();rows=[l for l in m.splitlines() if l.startswith('| **')];print(sum(l.count('developers.openai.com/codex/') for l in rows), len(rows))\"",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/rosetta/README.md",
+      "verified": "2026-09-11"
     },
     {
       "id": "zero-dependencies",

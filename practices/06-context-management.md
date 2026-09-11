@@ -1,6 +1,6 @@
 # 06 — 上下文管理
 
-> 适用工具：Claude Code · Codex · Cursor · Copilot（实现位置见[对照表](../rosetta/)）· 验证于 2026-08
+> 适用工具：Claude Code · Codex · Cursor · Copilot（实现位置见[对照表](../rosetta/)）· 验证于 2026-09
 
 上下文窗口装着整段对话：每条消息、每个读过的文件、每次命令输出。窗口越满，模型表现越差——Anthropic 称之为需要管理的"最重要资源"，OpenAI 称之为 context pollution / context rot。本章的每条实践都指向同一件事：只让当前任务需要的信息占据窗口。
 
@@ -41,12 +41,12 @@ Report back file paths and a summary; don't paste file contents.
 
 2. 各工具的入口：
    - **Claude Code**：内置 Explore（只读、专做代码库搜索）自动触发；自定义 subagent 放 `.claude/agents/*.md`（[sub-agents](https://code.claude.com/docs/en/sub-agents)）。
-   - **Codex**：直接说 "spawn one agent per point, wait for all of them, and summarize"；CLI 里用 `/agent` 查看和切换 agent 线程（[subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents)）。
+   - **Codex**：直接说 "spawn one agent per point, wait for all of them, and summarize"；CLI 里用 `/agent` 查看和切换 agent 线程（[subagents](https://developers.openai.com/codex/subagents)）。
    - **Cursor**：内置 Explore / Bash / Browser 三个 subagent 自动隔离噪音输出；自定义放 `.cursor/agents/*.md`，用 `/name` 显式调用（[subagents](https://cursor.com/docs/subagents.md)）。
-   - **Copilot**：官方文档未提供项目内 subagent 机制；等价做法是把探索放进独立会话，只把结论带回主会话。
+   - **Copilot**：内置 explore / task / general-purpose / code-review / research / rubber-duck / security-review 等 agent，主 agent 可按需把它们作为 subagent 派发，各自独立上下文窗口；自定义放 `.github/agents/*.md`（[custom agents](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-custom-agents)）。
 3. 给 subagent 的任务描述必须自含——它看不到主对话历史，缺的约束要写进 prompt。
 
-**依据**：OpenAI 官方把这归为对抗 context pollution 的核心手段："Return summaries from subagents instead of raw intermediate output"（[Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents)）；Anthropic 的表述是"探索在独立窗口进行，主对话留给实现"（[sub-agents](https://code.claude.com/docs/en/sub-agents)）。
+**依据**：OpenAI 官方把这归为对抗 context pollution 的核心手段："Return summaries from subagents instead of raw intermediate output"（[Codex subagents](https://developers.openai.com/codex/subagents)）；Anthropic 的表述是"探索在独立窗口进行，主对话留给实现"（[sub-agents](https://code.claude.com/docs/en/sub-agents)）。
 
 **边界**：写多改重的任务不要并行丢给多个 subagent——OpenAI 明确警告并发写代码会制造冲突、抬高协调成本；subagent 每个都独立跑模型，token 消耗高于单 agent。
 
@@ -61,10 +61,11 @@ Report back file paths and a summary; don't paste file contents.
 1. 计划阶段结束时，让 agent 把 spec 写成文件而不是停在对话里：
 
 ```text
-I want to build [brief description]. Interview me in detail using the
-AskUserQuestion tool. Ask about technical implementation, edge cases,
-and tradeoffs. Keep interviewing until we've covered everything,
-then write a complete spec to SPEC.md.
+I want to build [brief description]. Interview me in detail using the AskUserQuestion tool.
+
+Ask about technical implementation, UI/UX, edge cases, concerns, and tradeoffs. Don't ask obvious questions, dig into the hard parts I might not have considered.
+
+Keep interviewing until we've covered everything, then write a complete spec to SPEC.md.
 ```
 
 2. spec 写完后开一个全新会话执行——新会话上下文干净，只装实现所需的内容，spec 文件就是它的输入。
@@ -140,7 +141,7 @@ paths:
 
 **依据**：`@` import 语法、200 行目标、`paths` 规则、HTML 注释剥离均来自 [Claude memory 官方页](https://code.claude.com/docs/en/memory)；Cursor `globs` 语法见 [rules 官方页](https://cursor.com/docs/rules.md)；"Bloated CLAUDE.md files cause Claude to ignore your actual instructions" 见 [最佳实践指南](https://code.claude.com/docs/en/best-practices)。
 
-**边界**：`@` import 是 Claude Code 专属语法，Codex / Cursor / Copilot 不解析；跨工具通用的按需引用写法是正文一句"改 X 前先读 docs/Y.md"。
+**边界**：`@` import 是 Claude Code 专属语法；Codex / Copilot 的官方文档没有对应的 import 机制，Cursor 的 `@` 用于引用规则与模板文件（语义不同）。跨工具通用的按需引用写法是正文一句"改 X 前先读 docs/Y.md"。
 
 **反模式**：把风格指南整本粘进 memory 文件——Cursor 官方点名这是错法："Use a linter instead. Agent already knows common style conventions."
 

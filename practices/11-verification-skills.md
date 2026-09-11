@@ -27,13 +27,14 @@
 
    ```js
    // cypress.config.js
-   module.exports = { e2e: { video: true } }; // 失败截图保持默认开启
+   const { defineConfig } = require('cypress')
+   module.exports = defineConfig({ video: true }) // 失败截图保持默认开启
    ```
 
 3. CI 里用 `upload-artifact` + `if: always()` 把这些证据带出失败现场——失败时恰好拿不到证据的 artifact 等于没有（与 09 章 failure-artifacts 同一条要求）：
 
    ```yaml
-   - uses: actions/upload-artifact@v4
+   - uses: actions/upload-artifact@v7
      if: always()
      with:
        name: playwright-evidence
@@ -58,7 +59,7 @@
 
 **做法**：
 
-1. 给 agent 浏览器驱动能力。Playwright 官方提供 MCP server，把浏览器操作（导航、点击、截图）暴露成 agent 可调用的工具：
+1. 给 agent 浏览器驱动能力。Playwright 官方提供 MCP server，把浏览器操作（导航、点击、截图）暴露成 agent 可调用的工具——它的主通道是结构化可访问性快照，"bypassing the need for screenshots or visually-tuned models"。注意该 README 现在同时建议：**coding agent** 优先考虑 CLI+SKILLS（[microsoft/playwright-cli](https://github.com/microsoft/playwright-cli)），因为 CLI 调用比 MCP 更省 token（不必把大块工具 schema 与冗长快照塞进上下文）：
 
    ```json
    {
@@ -78,7 +79,7 @@
 
 3. Claude Code 官方最佳实践把「给 agent 可运行的闭环检查」列为工作核心，对 UI 类工作明确认可截图作为检查形式之一——断言、构建退出码、lint、截图是同一类东西：pass/fail 或可对照的证据，而不是「我觉得改好了」（[Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)）。
 
-**依据**：Playwright MCP 由 Microsoft 官方维护，README 明确其定位是「为 agent 提供可访问的浏览器自动化，把 UI 证据作为上下文的一部分」（[microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp)）；闭环检查的合法形式清单见上条 Claude Code 官方文档。
+**依据**：Playwright MCP 由 Microsoft 官方维护，README 的定位原文是 "provides browser automation capabilities using Playwright … through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models"，并明确 "If you are using a coding agent, you might benefit from using the CLI+SKILLS instead"（[microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp)）；闭环检查的合法形式清单见上条 Claude Code 官方文档。
 
 **边界**：agent 贴出的截图仍需人眼对照设计稿——「截图」是把「看起来对不对」的判断从想象移到证据上，判断标准本身（设计稿、产品预期）目前仍由人给定。无头浏览器与真实用户环境存在字体、渲染差异，像素级结论不要当精确事实。
 

@@ -1,6 +1,6 @@
 # 04 — 验证闭环
 
-> 适用工具：Claude Code · Codex · 所有读 AGENTS.md 的工具 · 验证于 2026-08
+> 适用工具：Claude Code · Codex · 所有读 AGENTS.md 的工具 · 验证于 2026-09
 
 Agent 在"看起来完成"时就会停手；没有一个它能自己运行的检查，你本人就是验证环节，每个错误都要等你发现。本章给出把验证做成闭环的五个手段：agent-TDD、独立评审、秒级静态检查、diff 对账、验收命令入库。目标是让 agent 自己跑检查、读结果、迭代到通过，而你只审证据。
 
@@ -88,9 +88,9 @@ Agent 在"看起来完成"时就会停手；没有一个它能自己运行的检
    codex exec resume --last "fix the race conditions you found"
    ```
 
-4. Codex 的仓库级评审规则写进 AGENTS.md 的 `## Code Review Rules` 节，放在被管代码最近的层级，每条规则写清"要标记的行为 + 安全替代路径"。
+4. 可以照抄 Codex 仓库自己的做法：仓库级评审规则写进根 `AGENTS.md` 的 `## Code Review Rules` 节，每条规则写清"要标记的行为 + 安全替代路径"（[openai/codex 的 AGENTS.md](https://github.com/openai/codex/blob/main/AGENTS.md)）。
 
-**依据**：Claude Code 官方专设 "Add an adversarial review step" 一节——fresh context 的评审者只看到 diff 和标准，不受产出该改动的推理影响（[Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)）；Codex 的两段式 exec/resume 评审模式见 [Non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode)，Code Review Rules 见 [Custom instructions with AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。
+**依据**：Claude Code 官方专设 "Add an adversarial review step" 一节——fresh context 的评审者只看到 diff 和标准，不受产出该改动的推理影响（[Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)）；Codex 的两段式 exec/resume 评审模式见 [Non-interactive mode](https://developers.openai.com/codex/noninteractive)；`## Code Review Rules` 这一节出自 Codex 仓库自己的 [AGENTS.md](https://github.com/openai/codex/blob/main/AGENTS.md)，不是 Codex 的文档化功能。
 
 **边界**：被要求找问题的评审者总会找出问题——官方明确警告全盘采纳会导致过度工程（多余抽象层、防御代码、测不可能发生的用例）。指令里限定只报影响正确性或既定需求的 gap，其余当可选建议。小 diff 人眼直接过更快。
 
@@ -179,7 +179,7 @@ Agent 在"看起来完成"时就会停手；没有一个它能自己运行的检
 
 3. 验证 agent 真的读到了：`codex --ask-for-approval never "Summarize the current instructions."`，输出应复述你写的条目。
 
-**依据**：agents.md 官方 FAQ 确认"列出的测试命令 agent 会自动执行相关检查并在结束任务前修复失败"，上述 Testing instructions 为官方示例文件原文（[agents.md](https://agents.md)）；全局 `~/.codex/AGENTS.md` 分层与验证命令见 [Custom instructions with AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。
+**依据**：agents.md 官方 FAQ 确认"列出的测试命令 agent 会自动执行相关检查并在结束任务前修复失败"，上述 Testing instructions 为官方示例文件原文（[agents.md](https://agents.md)）；全局 `~/.codex/AGENTS.md` 分层与验证命令见 [Custom instructions with AGENTS.md](https://developers.openai.com/codex/guides/agents-md)。
 
 **边界**：全量套件跑一次要几分钟的仓库，只把过滤后的单测命令写成默认动作，全量命令标注"合并前跑一次"；AGENTS.md 里的指令是建议性的，agent 可能跳过——必须无一例外执行的检查用 hook 兜底（见 4.3）。
 

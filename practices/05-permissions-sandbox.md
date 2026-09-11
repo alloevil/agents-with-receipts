@@ -1,6 +1,6 @@
 # 05 — 权限与沙箱
 
-> 适用工具：Claude Code · Codex · Cursor · Copilot CLI · 验证于 2026-08
+> 适用工具：Claude Code · Codex · Cursor · Copilot CLI · 验证于 2026-09
 
 Agent 能执行 shell 命令，就意味着它能做你的账户能做的一切：装包、删文件、推代码、发网络请求。本章解决的问题是：如何用各工具自带的权限档位、allowlist 和 OS 级沙箱，把 agent 的行动半径限制在任务需要的最小范围内。核心原则只有一条：授权跟着隔离走——隔离越弱，授权越窄。
 
@@ -32,7 +32,7 @@ Agent 能执行 shell 命令，就意味着它能做你的账户能做的一切�
    copilot --allow-tool='shell(git:*)' --deny-tool='shell(git push)'
    ```
 
-**依据**：Claude 官方将 `bypassPermissions` 的适用场景明确限定为隔离容器与 VM（[Permission modes](https://code.claude.com/docs/en/permission-modes)）；Codex 官方定义 full access 为 `danger-full-access` + `never` 的组合并给出 `workspace-write` + `on-request` 作为低风险预设（[Sandbox](https://learn.chatgpt.com/docs/sandboxing)）；Cursor Run Modes 三档见 [Run Modes](https://cursor.com/docs/agent/security/run-modes.md)；Copilot 的 `--allow-all` 隔离环境警告见 [Allowing tools](https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/allowing-tools)。
+**依据**：Claude 官方将 `bypassPermissions` 的适用场景明确限定为隔离容器与 VM（[Permission modes](https://code.claude.com/docs/en/permission-modes)）；Codex 官方定义 full access 为 `danger-full-access` + `never` 的组合并给出 `workspace-write` + `on-request` 作为低风险预设（[Sandbox](https://developers.openai.com/codex/concepts/sandboxing)）；Cursor Run Modes 三档见 [Run Modes](https://cursor.com/docs/agent/security/run-modes.md)；Copilot 的 `--allow-all` 隔离环境警告见 [Allowing tools](https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/allowing-tools)。
 
 **边界**：不要把档位当成一次性设置后不再回头的配置。接触生产凭据、处理不可信输入（如网页内容、第三方 issue）的会话应降回低档，即使你平时用高档工作。
 
@@ -82,7 +82,7 @@ Agent 能执行 shell 命令，就意味着它能做你的账户能做的一切�
    "**/*.env" = "deny"
    ```
 
-**依据**：Claude 的规则求值顺序为 deny → ask → allow，宽 deny 无法被窄 allow 打洞（[Configure permissions](https://code.claude.com/docs/en/permissions)）；Copilot 的 deny 规则优先于 allow、甚至优先于 `--allow-all`（[Allowing tools](https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/allowing-tools)）；Codex profile 中更具体的 deny 覆盖更宽的 write（[Permissions](https://learn.chatgpt.com/docs/permissions)）。
+**依据**：Claude 的规则求值顺序为 deny → ask → allow，宽 deny 无法被窄 allow 打洞（[Configure permissions](https://code.claude.com/docs/en/permissions)）；Copilot 的 deny 规则优先于 allow、甚至优先于 `--allow-all`（[Allowing tools](https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/allowing-tools)）；Codex profile 中更具体的 deny 覆盖更宽的 write（[Permissions](https://developers.openai.com/codex/permissions)）。
 
 **边界**：不要用 Bash 前缀规则约束命令参数（如 `Bash(curl http://github.com/ *)` 试图限制 curl 的目标域）。Claude 官方明确指出这类模式对选项顺序、协议变体、重定向和变量展开都是脆弱的——URL 过滤应改用 `WebFetch(domain:…)` 加上对 `curl`/`wget` 的 deny。
 
@@ -120,9 +120,9 @@ Agent 能执行 shell 命令，就意味着它能做你的账户能做的一切�
    "tracking.example.com" = "deny"
    ```
 
-4. Cursor 在 `sandbox.json` 里维护 allowlist，并在网络模式里选 **sandbox.json Only**（不叠加内置默认域名）或 **sandbox.json + Defaults**（叠加包管理器等常用域）。Copilot 本地沙箱可对公网访问与局域网访问独立开关。
+4. Cursor 在 `sandbox.json` 里维护 allowlist，并在网络模式里选 **sandbox.json Only**（不叠加内置默认域名）或 **sandbox.json + Defaults**（叠加包管理器等常用域）。Copilot 本地沙箱可对公网访问与局域网访问独立开关——Linux 上例外：bubblewrap 无法把局域网访问与出网访问分开控制，该设置在那里不单独生效。
 
-**依据**：Claude 沙箱网络隔离与 `allowedDomains` 见 [Sandboxing](https://code.claude.com/docs/en/sandboxing)；Codex 的 `network.enabled` 默认值与「无 allow 即全拒」语义见 [Permissions](https://learn.chatgpt.com/docs/permissions)；Cursor 网络默认拒绝与三种网络模式见 [Run Modes](https://cursor.com/docs/agent/security/run-modes.md)；Copilot 网络维度配置见 [About cloud and local sandboxes](https://docs.github.com/en/copilot/concepts/about-cloud-and-local-sandboxes)。
+**依据**：Claude 沙箱网络隔离与 `allowedDomains` 见 [Sandboxing](https://code.claude.com/docs/en/sandboxing)；Codex 的 `network.enabled` 默认值与「无 allow 即全拒」语义见 [Permissions](https://developers.openai.com/codex/permissions)；Cursor 网络默认拒绝与三种网络模式见 [Run Modes](https://cursor.com/docs/agent/security/run-modes.md)；Copilot 网络维度配置见 [About cloud and local sandboxes](https://docs.github.com/en/copilot/concepts/about-cloud-and-local-sandboxes)。
 
 **边界**：放行了包管理器域名不等于消除了供应链风险——`npm install` 的 lifecycle hook 仍在你放行的边界内执行任意代码。真正需要装未知依赖时，把整个会话放进容器（见 5.4），而不是继续加宽域名表。
 
@@ -150,7 +150,7 @@ Agent 能执行 shell 命令，就意味着它能做你的账户能做的一切�
 
 4. 不要把 `OPENAI_API_KEY` / `CODEX_API_KEY` 设成 job 级环境变量——同 job 内 checkout 出来的构建脚本、测试和依赖 hook 都读得到它。只在单条 `codex exec` 调用上内联传入。
 
-**依据**：`codex exec` 的默认 read-only 沙箱、`danger-full-access` 隔离限定、job 级 API key 警告与 `contents: read` 工作流示例均来自 [Non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode)；Claude `dontAsk`/`bypassPermissions` 的定位见 [Permission modes](https://code.claude.com/docs/en/permission-modes)；Cursor `-p --force` 见 [Headless CLI](https://cursor.com/docs/cli/headless.md)。
+**依据**：`codex exec` 的默认 read-only 沙箱、`danger-full-access` 隔离限定、job 级 API key 警告与 `contents: read` 工作流示例均来自 [Non-interactive mode](https://developers.openai.com/codex/noninteractive)；Claude `dontAsk`/`bypassPermissions` 的定位见 [Permission modes](https://code.claude.com/docs/en/permission-modes)；Cursor `-p --force` 见 [Headless CLI](https://cursor.com/docs/cli/headless.md)。
 
 **边界**：隔离环境不豁免数据出口控制。容器里跑 `--dangerously-skip-permissions` 保护的是你的机器，不保护挂载进容器的 secret 和源码——网络 allowlist（5.3）在 CI 里同样要收紧。
 
@@ -166,12 +166,12 @@ Agent 能执行 shell 命令，就意味着它能做你的账户能做的一切�
    - **Cursor**：macOS 经 `sandbox-exec` 用 Seatbelt；Linux 用 Landlock（需内核 6.2+ 且 Landlock v3）+ seccomp，不满足时回退到逐条批准。
    - **Copilot CLI**：经 MXC 抽象层，macOS Seatbelt、Linux bubblewrap、Windows ProcessContainer；实验特性，默认关闭，需 `/sandbox enable`。
 2. 逐条核对官方自陈的缺口，据此保留人工批准点：
-   - Copilot 官方自陈本地沙箱位于隔离谱系的轻量端——"it does not run your commands inside a separate virtual machine or container"；CLI 内置文件工具在 CLI 进程内运行，OS 沙箱看不到这些操作，只能 "on a best-effort basis" 自律遵守策略；Windows 后端无法拦截单个路径，deny 路径规则在 Windows 上被忽略。
+   - Copilot 官方自陈本地沙箱位于隔离谱系的轻量端——"it does not run your commands inside a separate virtual machine or container"；CLI 内置文件工具在 CLI 进程内运行，OS 沙箱看不到这些操作，只能 "on a best-effort basis" 自律遵守策略；Windows 后端无法拦截单个路径，官方因此直接要求不要在 Windows 上使用 deny 路径设置——CLI 无法强制它，带该设置的沙箱命令会以报错失败，而不是静默忽略。
    - Claude 默认在沙箱依赖缺失时**降级为不沙箱运行**，托管部署应设 `"sandbox": {"failIfUnavailable": true}` 改为硬失败；沙箱还有 `dangerouslyDisableSandbox` 逃生舱，可加 ask 规则强制每次逃逸都提示。
    - Cursor 官方声明 Auto-review 分类器 "is not a security boundary"，且需要完整系统访问的命令会绕过沙箱执行（绕过时要求你批准）。
 3. 结论落到配置上：沙箱 + 窄授权（5.2/5.3）叠加使用；真正的不可信工作负载用容器/VM/云沙箱这一级隔离（5.4），OS 级沙箱只作为其内层。
 
-**依据**：Claude 的 Seatbelt/bubblewrap 依赖与降级行为见 [Sandboxing](https://code.claude.com/docs/en/sandboxing)；Codex 各平台实现见 [Sandbox](https://learn.chatgpt.com/docs/sandboxing)；Cursor 的 Seatbelt/Landlock 实现与分类器边界声明见 [Run Modes](https://cursor.com/docs/agent/security/run-modes.md)；Copilot 的 MXC 后端、轻量隔离自陈与 Windows 路径限制见 [About cloud and local sandboxes](https://docs.github.com/en/copilot/concepts/about-cloud-and-local-sandboxes)。
+**依据**：Claude 的 Seatbelt/bubblewrap 依赖与降级行为见 [Sandboxing](https://code.claude.com/docs/en/sandboxing)；Codex 各平台实现见 [Sandbox](https://developers.openai.com/codex/concepts/sandboxing)；Cursor 的 Seatbelt/Landlock 实现与分类器边界声明见 [Run Modes](https://cursor.com/docs/agent/security/run-modes.md)；Copilot 的 MXC 后端、轻量隔离自陈与 Windows 路径限制见 [About cloud and local sandboxes](https://docs.github.com/en/copilot/concepts/about-cloud-and-local-sandboxes)。
 
 **边界**：反过来也不要因为沙箱有缺口就弃用它。OS 级沙箱把「一条被注入的命令读走 `~/.ssh`」从默认可能变成需要额外突破的事件，这一层收益与上层授权档位无关，任何档位下都应保持开启。
 

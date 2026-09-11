@@ -89,7 +89,7 @@
     <h2>有据可查的 agentic coding 实践手册 —— 只回答两个问题</h2>
     <p><strong>每条断言都必须回答一个问题:出处在哪?</strong>答案是可以点开的官方文档,而不是口号。市面上关于 Claude Code、Codex、Cursor 的最佳实践合集不少,但绝大多数是没有出处的断言(「CLAUDE.md 要短」「先规划再写码」)。这个仓库只回答关于一个仓库的两个问题:<strong>agent 读得懂它吗</strong>(AGENTS.md、条件规则、hooks、skills、CI 门禁),<strong>agent 在里面验得动自己的工作成果吗</strong>(一条命令跑完全部验证、确定性、失败留下的证据)。第一个问题决定 agent 会不会一开始就走错,第二个决定你敢不敢让它自己合 PR。四件东西共用同一条规则:没有出处的断言不收,过期的条目删掉而不是留着加个注解。</p>
     <ul>
-      <li><strong>逐格核实的跨工具对照表(<a href="rosetta/">rosetta</a>)</strong>——把 Claude Code、OpenAI Codex、Cursor、GitHub Copilot 放在十个概念上对照:项目级 memory、用户级 memory、条件/路径规则、skills、hooks、子 agent、操作系统级沙箱、审批模式、MCP 配置、headless/CI。十行 × 四列共 40 格,每一格的文字本身就是对应官方文档页的链接,2026-08 逐格核实,方便任何人一键复核其中任意一格。</li>
+      <li><strong>逐格核实的跨工具对照表(<a href="rosetta/">rosetta</a>)</strong>——把 Claude Code、OpenAI Codex、Cursor、GitHub Copilot 放在十个概念上对照:项目级 memory、用户级 memory、条件/路径规则、skills、hooks、子 agent、操作系统级沙箱、审批模式、MCP 配置、headless/CI。十行 × 四列共 40 格,每一格的文字本身就是对应官方文档页的链接,2026-09-11 逐格复核,方便任何人一键复核其中任意一格。</li>
       <li><strong>有出处的实践地图(<a href="practices/">practices</a>)</strong>——十三章:一篇可跟做的 walkthrough,01–08 与 12 讲第一个问题(读得懂:配置写在哪、任务怎么框、上下文怎么管,以及接手陌生代码库时怎么把运行时和动机都问出来),09–11 讲第二个问题(验得动:把仓库改造成可被验证、把团队规矩下沉成能自动失败的硬约束、让 agent 对 UI 类工作产出截图/trace 级证据)。每条实践按「场景 → 做法(可复制的示例)→ 依据(官方链接)→ 边界」展开,标注适用工具与验证日期。</li>
       <li><strong>四个可执行的检查器(tools)</strong>——<code>agentsmd-lint</code> 给单个 memory 文件挑毛病:行数超标、模板占位符没填、含糊到 agent 无法执行的措辞、引用了不存在的 npm script、空的标题小节;<code>agents-doctor</code> 用 8 项检查看整个仓库的 agent 基建;<code>agents-init</code> 给还没有 AGENTS.md 的仓库写一份,只写它真的探测到的命令;<code>verify-doctor</code> 用 10 项检查按六个阶段报出验证回路的缺口(有没有一条命令跑完全部验证、测试是否确定、失败有没有留下可解析的证据与 artifact、UI 失败有没有留下截图/trace、跨模块引用会不会失败、逃逸口有没有被计数、flaky 有没有被清零或隔离)。<code>verify-doctor</code> 的探测是按生态写的,目前覆盖 JS/TS、Python、Go、Rust、Java/Kotlin 五个栈;其他语言上只有读 CI YAML 与仓库文件的那四项(单命令入口、失败证据与 artifact、模块边界、PR 证据模板)还能给结论,测试与逃逸口那五项一律报「不适用」并写明原因(ui-evidence 认的是框架配置而不是语言探针,无浏览器测试框架时同样报 info)——无可检之物时报 info 不报 ok,绿灯必须有信息量。四个都是零依赖的单文件 Node ESM 脚本(Node ≥ 20)。</li>
       <li><strong>给 agent 的接口</strong>——四个检查器都接受 <code>--json</code>,输出同一套结构(<code>tool</code> / <code>target</code> / <code>summary</code> / <code>results</code>),<code>level</code> 只有 ok、warn、error、info 四种,stdout 里只有一个 JSON 对象,没有人类输出行也没有 ANSI 转义。退出码:0 干净,当且仅当存在 error 级结果时为 1,用法错误为 2 —— 用法错误时只往 stderr 写一行用法、stdout 保持为空,解析方不会读到半个对象。都可以原样放进 CI。这个仓库的读者一半是 agent,让它去正则匹配人类报告行不是输出格式,是接口缺失。</li>
@@ -97,7 +97,7 @@
     <h3>先读哪几页</h3>
     <ul>
       <li><a href="practices/00-agent-ready-walkthrough.html">00 · 从零把一个仓库配成 agent-ready</a>——AGENTS.md → 条件规则 → hook → lint 进 CI,每一步都能自己验证。</li>
-      <li><a href="practices/01-memory-files.html">01 · Memory 文件</a>——一份 AGENTS.md 该写什么、不该写什么,以及为什么它的每一行都在花掉每个会话的上下文预算。</li>
+      <li><a href="practices/01-memory-files.html">01 · Memory 文件</a>——一份 AGENTS.md 该写什么、不该写什么,为什么它的每一行都在花掉每个会话的上下文预算;以及 Claude 的 auto memory:agent 自己写的笔记存在哪、怎么审。</li>
       <li><a href="practices/05-permissions-sandbox.html">05 · 权限与沙箱</a>——四家的审批模式和操作系统级沙箱分别是什么,以及它们的边界在哪。</li>
       <li><a href="practices/09-verifiable-repo.html">09 · 可验证的仓库</a>——一条 dev 一条 check、六类不确定源、一份能直接喂给 agent 的失败报告、flaky 清零或隔离。</li>
       <li><a href="practices/10-hard-constraints.html">10 · 硬约束下沉</a>——把团队规矩从文档搬到能自动失败的层:结构 &gt; 类型 &gt; 机械 &gt; 提示,停在提示层等于承认没管住。</li>
@@ -196,7 +196,7 @@ verify-ready: ok 2 · warn 5 · error 0</code></pre>
 <table>
 <tr><th>轴</th><th>章</th><th>这章回答什么</th><th>对应检查（<code>--json</code> 的 <code>id</code>）</th></tr>
 <tr><td>读得懂</td><td><a href="#/practices/00-agent-ready-walkthrough.md"><strong>00 从零配齐（可跟做）</strong></a></td><td>一个仓库从没有任何基建，到 lint 进 CI 的完整动线</td><td><code>agentsmd-lint</code> 的 5 条规则 · <code>agents-doctor</code> 的 <code>ci-gate</code> · <code>agents-init</code> 生成起点</td></tr>
-<tr><td>读得懂</td><td><a href="#/practices/01-memory-files.md"><strong>01 Memory 文件</strong></a></td><td>AGENTS.md / CLAUDE.md 写什么、删什么、怎么维护</td><td><code>agentsmd-lint</code> 的 <code>max-lines</code> · <code>placeholder</code> · <code>vague</code> · <code>dead-script</code> · <code>empty-section</code> · <code>agents-doctor</code> 的 <code>agents-md</code> · <code>claude-md</code></td></tr>
+<tr><td>读得懂</td><td><a href="#/practices/01-memory-files.md"><strong>01 Memory 文件</strong></a></td><td>AGENTS.md / CLAUDE.md 写什么、删什么、怎么维护，以及怎么审计 Claude 的 auto memory</td><td><code>agentsmd-lint</code> 的 <code>max-lines</code> · <code>placeholder</code> · <code>vague</code> · <code>dead-script</code> · <code>empty-section</code> · <code>agents-doctor</code> 的 <code>agents-md</code> · <code>claude-md</code></td></tr>
 <tr><td>读得懂</td><td><a href="#/practices/02-mechanism-selection.md"><strong>02 机制选型</strong></a></td><td>同一件事该写成 memory、rule、skill、hook 还是 subagent</td><td><code>agents-doctor</code> 的 <code>rules</code> · <code>hooks</code> · <code>skills</code></td></tr>
 <tr><td>读得懂</td><td><a href="#/practices/03-task-framing.md"><strong>03 任务框架与规划</strong></a></td><td>怎么把任务写成 agent 能执行、能自查的样子</td><td>无 —— 任务写法没有机械检查项</td></tr>
 <tr><td>读得懂</td><td><a href="#/practices/04-verification.md"><strong>04 验证闭环</strong></a></td><td>agent-TDD、独立评审、diff 对账</td><td><code>verify-doctor</code> 的 <code>evidence-template</code></td></tr>

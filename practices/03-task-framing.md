@@ -1,6 +1,6 @@
 # 03 — 任务框架与规划
 
-> 适用工具：Claude Code · Codex（框架通用） · 验证于 2026-08
+> 适用工具：Claude Code · Codex（框架通用） · 验证于 2026-09
 
 agent 拿到的第一条 prompt 决定它解决的是哪个问题。本章给出把任务写成 agent 能执行、能自查的方法：四要素结构、先规划后动手、先探索后编辑、以及可验证的完成条件。
 
@@ -10,7 +10,7 @@ agent 拿到的第一条 prompt 决定它解决的是哪个问题。本章给出
 
 **做法**：
 
-1. 按四段写 prompt，对应官方要求的四件事：说清要什么行为（Goal）、指向相关代码或复现步骤（Context）、保住关键约束（Constraints）、说明如何验证（Done-When）。
+1. 按四段写 prompt：说清要什么行为（Goal）、指向相关代码或复现步骤（Context）、保住关键约束（Constraints）、说明如何验证（Done-When）。这个四段结构是本手册的综合，其中「复现步骤 + 验证方式」和「约束比高层描述更重要」两句都是 Codex 官方原文（见本节依据）。
 2. 模板（替换方括号内容后直接可用）：
 
    ```text
@@ -38,7 +38,7 @@ agent 拿到的第一条 prompt 决定它解决的是哪个问题。本章给出
    |---|---|
    | "fix the login bug" | "用户反馈 session 超时后登录失败。查 src/auth/ 的 auth flow，重点看 token refresh。先写一个复现该问题的失败测试，再修复它" |
 
-**依据**：Codex 官方 prompting 指引要求 prompt "names the behavior you want, points to the relevant code or reproduction steps, preserves important constraints, and says how to verify the change"，其 bug 修复工作流示例正是这个结构（[Prompting Codex](https://learn.chatgpt.com/docs/prompting)）；坏/好对比出自 [Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)。
+**依据**：Codex 官方 prompting 指引要求 "Include steps to reproduce an issue, validate a feature, and run linting and pre-commit checks"，并把复杂任务拆小（[Prompting Codex](https://developers.openai.com/codex/prompting)）；其 bug 修复工作流把「复现步骤与约束」标为 "these matter more than a high-level description"（[Workflows](https://developers.openai.com/codex/workflows)）；坏/好对比出自 [Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)。
 
 **边界**：一句话能说清 diff 的小改动（改 typo、加一行 log、重命名变量）直接下指令，四要素是负担不是帮助。探索性提问也不用套模板——"这个文件你会改进什么？"这类模糊 prompt 在你能承受纠偏成本时反而能带来意外收获。
 
@@ -68,7 +68,7 @@ agent 拿到的第一条 prompt 决定它解决的是哪个问题。本章给出
    Keep interviewing until we've covered everything, then write a complete spec to SPEC.md.
    ```
 
-**依据**：Claude plan mode 的进入方式与只读行为见 [Permission modes](https://code.claude.com/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode)；Codex `/plan` 与 `$plan` 入口见 [Prompting Codex](https://learn.chatgpt.com/docs/prompting)；面试式 prompt 模板逐字出自 [Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)。
+**依据**：Claude plan mode 的进入方式与只读行为见 [Permission modes](https://code.claude.com/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode)；Codex `/plan` 与 `$plan` 入口见 [Workflows](https://developers.openai.com/codex/workflows)；面试式 prompt 模板逐字出自 [Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)。
 
 **边界**：Anthropic 官方明说 plan mode 有额外开销："如果你能用一句话描述 diff，就跳过计划"。计划最值钱的三种情况：方案不确定、改动跨多文件、你不熟悉被改的代码。
 
@@ -100,7 +100,7 @@ agent 拿到的第一条 prompt 决定它解决的是哪个问题。本章给出
    - one or two "gotchas" to watch for when changing this
    ```
 
-**依据**：Anthropic 官方推荐工作流是 "Explore first, then plan, then code"，四阶段与探索 prompt 均出自 [Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)；Codex 的 "Explain a codebase" 工作流见 [Prompting Codex](https://learn.chatgpt.com/docs/prompting)。
+**依据**：Anthropic 官方推荐工作流是 "Explore first, then plan, then code"，四阶段与探索 prompt 均出自 [Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)；Codex 的 "Explain a codebase" 工作流见 [Workflows](https://developers.openai.com/codex/workflows)。
 
 **边界**：已熟悉的代码路径重复探索只烧上下文。探索的产出（结论、涉及文件清单）应固化进计划或 spec 文件，不要依赖对话记忆——对话会被压缩，文件不会。
 
@@ -121,7 +121,7 @@ agent 拿到的第一条 prompt 决定它解决的是哪个问题。本章给出
 2. 用 `@` 直接引用文件，代替描述"代码大概在哪"：Claude Code 里写 `@src/auth/token.ts`，agent 回答前会先读该文件；Codex CLI 里用 `@` 路径自动补全，或用 `/mention` 附加指定文件。
 3. 记住各 surface 的默认上下文差异：Codex IDE 扩展自动带上你打开的文件；CLI 里必须显式写路径或 `@` 附件。
 
-**依据**：Codex 官方指引把 boundaries 定义为"防止改错一个细节导致整个结果作废"的少数几条指令，并要求"聚焦最重要的一两条"；其 bug 工作流注明复现步骤和约束 "matter more than a high-level description"（[Prompting](https://learn.chatgpt.com/docs/prompting)）；`@` 文件引用与 IDE/CLI 上下文差异见 [Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)与 [Prompting Codex](https://learn.chatgpt.com/docs/prompting)。
+**依据**：Codex 的 bug 修复工作流注明复现步骤和约束 "matter more than a high-level description"（[Workflows](https://developers.openai.com/codex/workflows)）；`@` 文件引用与 IDE/CLI 上下文差异见 [Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)与 [Workflows](https://developers.openai.com/codex/workflows)。
 
 **边界**：对每次会话都成立的规则（测试命令、代码风格、禁改目录）属于 AGENTS.md / CLAUDE.md 这类 memory 文件，不该在每条 prompt 里重复；prompt 里只留本任务特有的约束。
 
@@ -148,8 +148,9 @@ agent 拿到的第一条 prompt 决定它解决的是哪个问题。本章给出
    ```
 
 4. 要证据不要断言：让 agent 贴出测试输出、执行过的命令及返回值、或结果截图。你审证据比自己重跑验证快，也覆盖你不在场的会话。
+5. 长任务可以把完成条件升级成 Codex 的 Goal mode：用 `/goal` 启动（app / IDE / CLI），目标文本同时充当起始 prompt 与完成判据，Codex 据此决定下一步和何时收工。写目标时带上具体结果、可测指标或测试判据，官方示例是 "Migrate this codebase from JavaScript to TypeScript. The app should compile in strict mode without explicit `any` type definitions."（[Prompting: Goal mode](https://developers.openai.com/codex/prompting#goal-mode)）。
 
-**依据**：Anthropic 官方："Claude stops when the work looks done"——没有可跑的检查时你本人就是验证环节，每个错误都要等你发现；给出 pass/fail 信号后循环自动闭合（[Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)）。Codex 同样要求 prompt "says how to verify the change" 并在修复后重跑 repro（[Prompting Codex](https://learn.chatgpt.com/docs/prompting)）。
+**依据**：Anthropic 官方："Claude stops when the work looks done"——没有可跑的检查时你本人就是验证环节，每个错误都要等你发现；给出 pass/fail 信号后循环自动闭合（[Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)）。Codex 同样要求 prompt 带上验证方式（"Include steps to reproduce an issue, validate a feature, and run linting and pre-commit checks"），并在修复后重跑 repro（[Prompting Codex](https://developers.openai.com/codex/prompting) · [Workflows](https://developers.openai.com/codex/workflows)）；Goal mode 见 [Prompting: Goal mode](https://developers.openai.com/codex/prompting#goal-mode)。
 
 **边界**：检查本身要快——完成条件挂在十分钟的全量集成测试上，agent 的自查循环会退化成你等结果；挂最小相关测试集，全量检查留给 CI。验证闭环的升级形态（test-first、独立评审、Stop hook 硬门禁）见验证闭环一章。
 

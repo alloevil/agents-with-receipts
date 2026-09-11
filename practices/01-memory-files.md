@@ -1,6 +1,6 @@
 # 01 — Memory 文件：AGENTS.md / CLAUDE.md 的写法与维护
 
-> 适用工具：Claude Code · Codex · Cursor · GitHub Copilot · 验证于 2026-08
+> 适用工具：Claude Code · Codex · Cursor · GitHub Copilot · 验证于 2026-09
 
 memory 文件是 agent 每次会话都要付费加载的常驻上下文：写少了 agent 重复犯错，写多了反而淹没关键指令。本章给出从起步、写法、调优，到跨工具共享与 CI 门禁的完整维护路径。每条做法都对应到四家官方文档的原文。
 
@@ -11,7 +11,7 @@ memory 文件是 agent 每次会话都要付费加载的常驻上下文：写少
 **做法**：
 
 1. 对每一行套用 Claude 官方的删行判据："删掉这一行，agent 会犯错吗？"——不会就删。目录结构、依赖列表、语言通用约定都属于 agent 能从代码推断的内容，删。
-2. 起步只保留三类，20-30 行足够：一句话项目概述、无法从代码猜出的命令、与工具默认不同的约定。Claude Code 官方给出的单文件上限是 200 行，超过会降低遵从度。
+2. 起步只保留三类，20-30 行足够：一句话项目概述、无法从代码猜出的命令、与工具默认不同的约定。Claude Code 官方给出的目标是单文件 200 行以内（原文 "target under 200 lines per CLAUDE.md file"），超过会降低遵从度；硬跳过线是 4 MiB。
 
    ```markdown
    # weibo-chat-auto — Agent 指南
@@ -91,7 +91,7 @@ memory 文件是 agent 每次会话都要付费加载的常驻上下文：写少
 
 2. 对必须 100% 拦截的 never 条目，再配一层 hooks 或 permissions deny 兜底——memory 文件是 context，不是强制配置。
 
-**依据**：Codex 官方示例文件本身就使用这三种句式——"Always run `npm test`…"、"Ask for confirmation before adding new production dependencies"、"Never rotate API keys without notifying the security channel"（[Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md#create-global-guidance)）；Claude 官方明确 memory 文件"treats them as context, not enforced configuration"，要无条件阻止某动作需用 PreToolUse hook（[memory](https://code.claude.com/docs/en/memory#claude-md-vs-auto-memory)）。
+**依据**：Codex 官方示例文件本身就使用这三种句式——"Always run `npm test`…"、"Ask for confirmation before adding new production dependencies"、"Never rotate API keys without notifying the security channel"（[Codex AGENTS.md](https://developers.openai.com/codex/guides/agents-md#create-global-guidance)）；Claude 官方明确 memory 文件"treats them as context, not enforced configuration"，要无条件阻止某动作需用 PreToolUse hook（[memory](https://code.claude.com/docs/en/memory#claude-md-vs-auto-memory)）。
 
 **边界**：never 列表超过十条说明约束放错了层——可机检的（路径、命令模式）挪进 hooks 与 permissions（见 [05 章](05-permissions-sandbox.md)），memory 里只留需要判断的边界。
 
@@ -149,7 +149,7 @@ memory 文件是 agent 每次会话都要付费加载的常驻上下文：写少
    | 工具 | 官方定义的加载语义 |
    |---|---|
    | Claude Code | 从 cwd 向上收集每层 `CLAUDE.md` 全部拼接，越近越靠后；cwd 之下的子目录文件按需加载（[memory](https://code.claude.com/docs/en/memory#how-claude-md-files-load)） |
-   | Codex | 从项目根向下走到 cwd，每目录至多取一个文件拼接，越近越靠后；按 cwd 而不是被编辑的文件（[AGENTS.md discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md#how-codex-discovers-guidance)） |
+   | Codex | 从项目根向下走到 cwd，每目录至多取一个文件拼接，越近越靠后；按 cwd 而不是被编辑的文件（[AGENTS.md discovery](https://developers.openai.com/codex/guides/agents-md#how-codex-discovers-guidance)） |
    | Cursor | 嵌套 `AGENTS.md` 与父目录合并，更具体的优先（[Cursor Rules](https://cursor.com/docs/rules.md#agentsmd)） |
    | Copilot | VS Code 里最近的 `AGENTS.md` 优先；CLI 文档只列出读取 `AGENTS.md`/`CLAUDE.md`/`GEMINI.md`，未定义优先级（[仓库指令](https://docs.github.com/en/copilot/how-tos/configure-custom-instructions-in-your-ide/add-repository-instructions-in-your-ide) · [支持矩阵](https://docs.github.com/en/copilot/reference/custom-instructions-support)） |
 
@@ -198,6 +198,23 @@ memory 文件是 agent 每次会话都要付费加载的常驻上下文：写少
 **边界**：linter 只查得出形式问题（占位符、死命令、空节），查不出"这条规则本身还对不对"——内容层面的修剪仍靠 1.4 的行为观察。
 
 **反模式**：warning 长期挂着不修——门禁只对 error 生效时，warning 堆积等于没有门禁。
+
+## 1.7 Claude 的 auto memory：让 agent 自己记，你定期审计
+
+**场景**：你纠正过一次"用 pnpm，别用 npm"，下个会话它又忘了；或者反过来，担心 agent 自己悄悄写下一堆从没人看过的笔记。
+
+**做法**：
+
+1. 分清两套 memory：`CLAUDE.md` 是你写的契约；auto memory 是 Claude 按你的纠正与偏好自己写的笔记（官方原话 "notes Claude writes itself based on your corrections and preferences"）。两套都在会话开始时载入。
+2. 知道它写在哪：`~/.claude/projects/<project>/memory/`，`MEMORY.md` 是索引（一行一条），细节在各自 topic 文件里；同一 git 仓库的所有 worktree 与子目录共用一个 auto memory 目录，且只在本机。
+3. 用 `/memory` 审计：浏览、打开、删除，或者直接关掉 auto memory；会话里出现 "Saved N memories" / "Recalled N memories" 就是它在读写。想确认当前会话真正载入了哪些文件，跑 `/context` 看 **Memory files**。
+4. 想让某条进 `CLAUDE.md` 而不是 auto memory，明确说 "add this to CLAUDE.md"，或者自己用 `/memory` 打开文件编辑。
+
+**依据**：auto memory 的定位、目录结构、载入上限（`MEMORY.md` 前 200 行或 25KB）、机器本地与 worktree 共享语义、`modified` 时间戳与 `/memory` 入口均出自 [Claude memory 官方页](https://code.claude.com/docs/en/memory#auto-memory)。
+
+**边界**：auto memory 是 agent 自己写的，不是契约——关键约束仍要落在 `CLAUDE.md` 里或用 hook 强制（见 1.3）。它的索引有独立的 200 行 / 25KB 读限：超限的部分**下次加载直接丢**，所以一条一行、细节挪 topic 文件，别把索引写成长文。
+
+**反模式**：把 auto memory 当成"agent 会自己记住一切"，于是什么规则都不写——它记的是它认为值得记的，而且接近读限时官方会提示它合并或丢弃过期条目。
 
 ---
 

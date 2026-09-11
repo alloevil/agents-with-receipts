@@ -23,7 +23,7 @@
 3. 要求它把结论落进文件（见 [06 上下文管理](06-context-management.md) 的 6.3），不要只停在对话里——对话会被压缩，文件不会。
 4. 拿不准就让它先跑起来再回答：能起服务就起服务，能跑单测就跑单测，用观察到的行为修正它的叙述（UI 类见 [11 验证技能](11-verification-skills.md)）。
 
-**依据**：Anthropic 官方工作流是 "Explore first, then plan, then code"，并确认「像问资深工程师一样提问」不需要特殊技巧（[Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)）；Codex 官方给出的 "Explain a codebase" 工作流要求回答里包含各模块职责、数据在哪被校验、以及改动时要注意的 gotcha（[Prompting Codex](https://learn.chatgpt.com/docs/prompting)）。
+**依据**：Anthropic 官方工作流是 "Explore first, then plan, then code"，并确认「像问资深工程师一样提问」不需要特殊技巧（[Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)）；Codex 官方给出的 "Explain a codebase" 工作流要求回答里包含各模块职责、数据在哪被校验、以及改动时要注意的 gotcha（[Codex: Workflows](https://developers.openai.com/codex/workflows)）。
 
 **边界**：已熟悉的路径重复探索只烧上下文；探索的产出（调用链、涉及文件、坑）应当进计划或 spec 文件，而不是靠会话记忆。
 
@@ -87,7 +87,7 @@
 2. 要求它引用仓库里的既有做法作为对照：「仓库里有没有已经在用队列的地方？它们为什么适合，为什么不适用于这里？」
 3. 让它自己说出什么证据会推翻它的建议——说不出，就说明这个建议还没被检验。
 
-**依据**：Anthropic 官方把「用你能理解的方式解释」列为探索阶段的目的之一，并给出向 agent 追问实现细节与边界条件的提问方式（[Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)）；Codex 的 explain 工作流同样要求给出各模块职责与 gotcha，而不是结论（[Prompting Codex](https://learn.chatgpt.com/docs/prompting)）。
+**依据**：Anthropic 官方把「用你能理解的方式解释」列为探索阶段的目的之一，并给出向 agent 追问实现细节与边界条件的提问方式（[Claude Code 最佳实践](https://code.claude.com/docs/en/best-practices)）；Codex 的 explain 工作流同样要求给出各模块职责与 gotcha，而不是结论（[Codex: Workflows](https://developers.openai.com/codex/workflows)）。
 
 **边界**：取舍清单不能替代决策——你负责选，它负责把代价摆到台面上。深层设计分歧不要靠追问解决，去写一个能跑的原型（结论见下条的做法 4）。
 
@@ -106,7 +106,7 @@
    .claude/skills/repo-mental-model/SKILL.md   # Claude Code 只读这里，用软链指过去
    ```
 
-   各家实际读取的目录与互通情况见[对照表](../rosetta/)（逐格核实，2026-08）。
+   各家实际读取的目录与互通情况见[对照表](../rosetta/)（逐格核实，2026-09）。
 
 2. frontmatter 至少写 `name` 与 `description`。`name` 必须与目录名一致、小写字母数字加连字符；`description` 决定 agent 什么时候自动加载它——写清「做什么」和「什么时候用」：
 

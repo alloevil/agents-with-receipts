@@ -1,6 +1,6 @@
 # 02 — 机制选型：memory / rules / skills / hooks / subagents 什么时候用哪个
 
-> 适用工具：Claude Code · Codex · Cursor · Copilot（实现位置见[对照表](../rosetta/)）· 验证于 2026-08
+> 适用工具：Claude Code · Codex · Cursor · Copilot（实现位置见[对照表](../rosetta/)）· 验证于 2026-09
 
 四个工具都提供五种放置指导的机制。选错的代价是真实的：常驻内容放错地方会**每次会话都烧上下文预算**；该硬拦的用了软提醒，规则会被无视。选型只需要回答两个问题：**多久用一次？违反了多严重？**
 
@@ -19,7 +19,7 @@
 
 判定顺序：先问"违反会怎样"——会造成不可逆伤害（读 secrets、动生成物、跳过测试）的放 **hooks**，因为提示词性质的机制全部可能被无视；再问"多久用一次"——每次都要的进 memory，特定路径才要的进条件规则，成套的专项流程进 skills。
 
-**依据**：Anthropic 官方按"上下文成本 × 权威度"给出同款选型框架（[steering 指南](https://claude.com/blog/steering-claude-code-skills-hooks-rules-subagents-and-more)）；hooks 的确定性语义见各家官方页（[Claude](https://code.claude.com/docs/en/hooks) / [Codex](https://learn.chatgpt.com/docs/hooks) / [Cursor](https://cursor.com/docs/hooks.md) / [Copilot](https://docs.github.com/en/copilot/concepts/agents/hooks)）。
+**依据**：Anthropic 官方按"上下文成本 × 权威度"给出同款选型框架（[steering 指南](https://claude.com/blog/steering-claude-code-skills-hooks-rules-subagents-and-more)）；hooks 的确定性语义见各家官方页（[Claude](https://code.claude.com/docs/en/hooks) / [Codex](https://developers.openai.com/codex/hooks) / [Cursor](https://cursor.com/docs/hooks.md) / [Copilot](https://docs.github.com/en/copilot/concepts/agents/hooks)）。
 
 **边界**：团队没有维护配置的习惯时，先只用 memory 文件——五种机制一起上的维护成本会立刻反噬。
 
@@ -72,7 +72,7 @@ alwaysApply: false
 同上。
 ```
 
-Copilot 用 `.github/instructions/*.instructions.md` 的 `applyTo:`（[语法](https://docs.github.com/en/copilot/how-tos/configure-custom-instructions-in-your-ide/add-repository-instructions-in-your-ide)）。**Codex 没有 glob 触发机制**——用嵌套 `AGENTS.md` 做目录粒度，且注意它按 cwd 而非被改文件就近（[官方发现规则](https://learn.chatgpt.com/docs/agent-configuration/agents-md#how-codex-discovers-guidance)）。
+Copilot 用 `.github/instructions/*.instructions.md` 的 `applyTo:`（[语法](https://docs.github.com/en/copilot/how-tos/configure-custom-instructions-in-your-ide/add-repository-instructions-in-your-ide)）。**Codex 没有 glob 触发机制**——用嵌套 `AGENTS.md` 做目录粒度，且注意它按 cwd 而非被改文件就近（[官方发现规则](https://developers.openai.com/codex/guides/agents-md#how-codex-discovers-guidance)）。
 
 **依据**：[Claude rules `paths:`](https://code.claude.com/docs/en/memory#path-specific-rules) · [Cursor `.mdc` frontmatter](https://cursor.com/docs/rules.md#rule-anatomy)。
 
@@ -89,7 +89,7 @@ Copilot 用 `.github/instructions/*.instructions.md` 的 `applyTo:`（[语法](h
 └── SKILL.md   # name: release  description: 发版流程（bump/notes/tag）
 ```
 
-**依据**：四家均基于 [agentskills.io](https://agentskills.io) 开放标准（[Claude](https://code.claude.com/docs/en/skills#where-skills-live) / [Codex](https://learn.chatgpt.com/docs/build-skills#where-to-save-skills) / [Cursor](https://cursor.com/docs/skills.md) / [Copilot](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)）。
+**依据**：四家均基于 [agentskills.io](https://agentskills.io) 开放标准（[Claude](https://code.claude.com/docs/en/skills#where-skills-live) / [Codex](https://developers.openai.com/codex/skills#where-to-save-skills) / [Cursor](https://cursor.com/docs/skills.md) / [Copilot](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)）。
 
 **边界**：description 写不清触发时机的 skill 等于不存在——agent 不会加载它。description 是 skill 最重要的一行。
 
@@ -102,13 +102,13 @@ Copilot 用 `.github/instructions/*.instructions.md` 的 `applyTo:`（[语法](h
 | 工具 | 配置位置 | 拦截语义 |
 |---|---|---|
 | [Claude Code](https://code.claude.com/docs/en/hooks) | settings.json `hooks` 键 | `PreToolUse` 返回 `permissionDecision: "deny"` |
-| [Codex](https://learn.chatgpt.com/docs/hooks) | `.codex/hooks.json`（需 `/hooks` 授信） | `PreToolUse` 事件 |
+| [Codex](https://developers.openai.com/codex/hooks) | `.codex/hooks.json`（需 `/hooks` 授信） | `PreToolUse` 事件 |
 | [Cursor](https://cursor.com/docs/hooks.md) | `.cursor/hooks.json` | 退出码 2 或 `permission:"deny"` |
 | [Copilot](https://docs.github.com/en/copilot/concepts/agents/hooks) | `.github/hooks/*.json` | `preToolUse` approve/deny |
 
 **依据**：见上表各官方页。
 
-**边界**：hooks 是同步阻塞的（各家默认超时 30s 上下），只放毫秒级判断；重逻辑放 CI。
+**边界**：hooks 是同步阻塞的，但默认超时比你预期长——Claude `command`/`http`/`mcp_tool` 默认 600s（`prompt` 30s、`agent` 60s），Codex 省略 `timeout` 时为 600s，Copilot `timeoutSec` 默认 30s；阻塞的是当次事件，所以只放秒级以内的判断，重逻辑放 CI。
 
 **反模式**：在 memory 文件里写"绝对不要读 .env"然后指望它恒成立——提示词没有"绝对"。
 

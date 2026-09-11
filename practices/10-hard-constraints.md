@@ -76,7 +76,7 @@
 | 语言 | ① 结构层（不依赖检查器被执行） | ③ 机械层（依赖检查器被执行） |
 |---|---|---|
 | TypeScript | monorepo workspaces：包的 `package.json` 里没有那条依赖，import 解析失败 | `dependency-cruiser` forbidden 规则 > eslint [`no-restricted-imports`](https://eslint.org/docs/latest/rules/no-restricted-imports) |
-| Python | 无语言级可见性可用（`_private` 只是约定） | `import-linter` 的 forbidden / layers / independence 合约 |
+| Python | 无语言级可见性可用（`_private` 只是约定，[PEP 8](https://peps.python.org/pep-0008/#descriptive-naming-styles)） | `import-linter` 的 forbidden / layers / independence 合约 |
 | Java / Kotlin | JPMS `module-info.java` | ArchUnit 测试（跑在普通单测里） |
 | Go | `internal/` 目录，由 go 命令强制 | `go vet` 与自定义 analyzer |
 | Rust | crate 拆分 + `pub(crate)` / `pub(super)` | clippy 规则 |
@@ -128,7 +128,7 @@ layers =
     myproject.db
 ```
 
-**依据**：workspaces 的符号链接与依赖声明语义见 [npm workspaces](https://docs.npmjs.com/cli/v11/using-npm/workspaces)；规则语法见 [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) 与 [Import Linter](https://import-linter.readthedocs.io/en/stable/)（官方合约类型：forbidden / protected / layers / independence / acyclic siblings）；Go 官方原文："Code in or below a directory named `internal` is importable only by code that shares the same import path above the internal directory"（[go command 文档](https://pkg.go.dev/cmd/go#hdr-Internal_packages)）；`pub(crate)` 语义见 [The Rust Reference](https://doc.rust-lang.org/reference/visibility-and-privacy.html)；Java 侧规则写法见 [ArchUnit User Guide](https://www.archunit.org/userguide/html/000_Index.html)。
+**依据**：workspaces 的符号链接与依赖声明语义见 [npm workspaces](https://docs.npmjs.com/using-npm/workspaces)；规则语法见 [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) 与 [Import Linter](https://import-linter.readthedocs.io/en/stable/)（官方合约类型：forbidden / protected / layers / independence / acyclic siblings）；Go 官方原文："Code in or below a directory named `internal` is importable only by code that shares the same import path above the internal directory"（[go command 文档](https://pkg.go.dev/cmd/go#hdr-Internal_packages)）；`pub(crate)` 语义见 [The Rust Reference](https://doc.rust-lang.org/reference/visibility-and-privacy.html)；Java 侧规则写法见 [ArchUnit User Guide](https://www.archunit.org/userguide/html/000_Index.html)。
 
 **边界**：拆包有真实成本——版本联动、构建图变复杂、跨包重构变贵。三个人的项目拆成十二个包是把边界成本前置到还不需要边界的时候。判据是「这条边界被违反过几次」，不是「架构图上有几个框」。
 
@@ -181,7 +181,7 @@ layers =
 
 **agent 最爱用一行 disable 注释让 CI 变绿。** 不数它，前面四层全部白做。
 
-**依据**：betterer 官方描述："把一个值随时间的变化记录下来，并确保它按你希望的方向变化"，变好就更新结果文件、变坏就报错（[Betterer 介绍](https://phenomnomnominal.github.io/betterer/docs/introduction/)）；ESLint 官方的抑制文件机制与"存量抑制已修复却没清理就报错"（`--prune-suppressions`）见 [Bulk Suppressions](https://eslint.org/docs/latest/use/suppressions)；`allow-with-description` / `minimumDescriptionLength` 语义见 [ban-ts-comment](https://typescript-eslint.io/rules/ban-ts-comment/)；ArchUnit 官方原文："Consecutive runs will then only report new violations and ignore known violations. If violations are fixed, `FreezingArchRule` will automatically reduce the known stored violations to prevent any regression"，且可用 `freeze.store.default.allowStoreUpdate=false` 在 CI 里禁止写基线（[ArchUnit 8.6](https://www.archunit.org/userguide/html/000_Index.html#_freezing_arch_rules)）；`strict` 与 `noUncheckedIndexedAccess` 见 [TSConfig 参考](https://www.typescriptlang.org/tsconfig/#strict)。
+**依据**：betterer 官方描述："把一个值随时间的变化记录下来，并确保它按你希望的方向变化"，变好就更新结果文件、变坏就报错（[Betterer 介绍](https://phenomnomnominal.github.io/betterer/docs/introduction)）；ESLint 官方的抑制文件机制与"存量抑制已修复却没清理就报错"（`--prune-suppressions`）见 [Bulk Suppressions](https://eslint.org/docs/latest/use/suppressions)；`allow-with-description` / `minimumDescriptionLength` 语义见 [ban-ts-comment](https://typescript-eslint.io/rules/ban-ts-comment/)；ArchUnit 官方原文："Consecutive runs will then only report new violations and ignore known violations. If violations are fixed, `FreezingArchRule` will automatically reduce the known stored violations to prevent any regression"，且可用 `freeze.store.default.allowStoreUpdate=false` 在 CI 里禁止写基线（[ArchUnit 8.6](https://www.archunit.org/userguide/html/000_Index.html#_freezing_arch_rules)）；`strict` 与 `noUncheckedIndexedAccess` 见 [TSConfig 参考](https://www.typescriptlang.org/tsconfig/#strict)。
 
 **边界**：棘轮只保证不变坏，不保证变好。基线文件必须带归零责任人和期限，否则它就是一份被永久接受的技术债清单。ArchUnit 官方那个 `allowStoreUpdate=false` 开关值得抄：CI 里禁止写基线，只有人在本地显式操作才能改。
 

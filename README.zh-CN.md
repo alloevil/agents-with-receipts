@@ -42,7 +42,7 @@ verify-ready: ok 2 · warn 5 · error 0
 
 | 板块 | 是什么 | 回答哪条轴 | 规模 |
 |---|---|---|---|
-| [`rosetta/`](rosetta/) | 跨工具对照表：同一概念在 Claude Code、Codex、Cursor、Copilot 里各叫什么、文件放哪、就近规则差在哪 | 读得懂 | 10 概念 × 4 工具 = 40 格，每格都是官方文档链接，2026-08 逐格核实 |
+| [`rosetta/`](rosetta/) | 跨工具对照表：同一概念在 Claude Code、Codex、Cursor、Copilot 里各叫什么、文件放哪、就近规则差在哪 | 读得懂 | 10 概念 × 4 工具 = 40 格，每格都是官方文档链接，2026-09-11 逐格复核 |
 | [`practices/`](practices/) | 实践手册章节。每条实践按「场景 → 做法 → 依据 → 边界」展开，做法给可复制示例 | 00-08 + 12 读得懂，09-11 验得动 | 13 个章节，其中第 00 章是可跟做的 walkthrough |
 | [`tools/`](tools/) | 把这些章节变成能真跑的检查，粒度覆盖单个文件到整个仓库 | 两条轴都覆盖 | 4 个 CLI · 5 条 lint 规则 · 8 项 doctor 检查 · 10 项 verify-doctor 检查 |
 | [`templates/`](templates/) | 从真实项目提炼的 `AGENTS.md` / `RULES.md` 骨架，注释里写明用法 | 读得懂 | 2 份骨架，都保证过 lint |
@@ -56,7 +56,7 @@ verify-ready: ok 2 · warn 5 · error 0
 | 轴 | 章 | 这章回答什么 | 对应检查（`--json` 的 `id`） |
 |---|---|---|---|
 | 读得懂 | [00 从零配齐（可跟做）](practices/00-agent-ready-walkthrough.md) | 一个仓库从没有任何基建，到 lint 进 CI 的完整动线 | `agentsmd-lint` 的 5 条规则 · `agents-doctor` 的 `ci-gate` · `agents-init` 生成起点 |
-| 读得懂 | [01 Memory 文件](practices/01-memory-files.md) | AGENTS.md / CLAUDE.md 写什么、删什么、怎么维护 | `agentsmd-lint` 的 `max-lines` · `placeholder` · `vague` · `dead-script` · `empty-section` · `agents-doctor` 的 `agents-md` · `claude-md` |
+| 读得懂 | [01 Memory 文件](practices/01-memory-files.md) | AGENTS.md / CLAUDE.md 写什么、删什么、怎么维护，以及怎么审计 Claude 的 auto memory | `agentsmd-lint` 的 `max-lines` · `placeholder` · `vague` · `dead-script` · `empty-section` · `agents-doctor` 的 `agents-md` · `claude-md` |
 | 读得懂 | [02 机制选型](practices/02-mechanism-selection.md) | 同一件事该写成 memory、rule、skill、hook 还是 subagent | `agents-doctor` 的 `rules` · `hooks` · `skills` |
 | 读得懂 | [03 任务框架与规划](practices/03-task-framing.md) | 怎么把任务写成 agent 能执行、能自查的样子 | 无 —— 任务写法没有机械检查项 |
 | 读得懂 | [04 验证闭环](practices/04-verification.md) | agent-TDD、独立评审、diff 对账 | `verify-doctor` 的 `evidence-template` |
@@ -98,7 +98,7 @@ Node ≥ 20，没有依赖需要装——四个 CLI 都是只用标准库的单�
   <img src="./assets/readme/section-rosetta.svg" width="100%" alt="第一板块 rosetta：跨工具对照，同一概念在 Claude Code、Codex、Cursor、Copilot 里叫什么、放哪。">
 </p>
 
-概念在四个工具里的叫法和位置各不相同：memory 文件、条件规则、skills、hooks、沙箱、审批、MCP、headless。[`rosetta/`](rosetta/) 是一张**逐格对照官方文档核实**的对照表——每个单元格本身就是官方文档链接，点开即可验证（2026-08 核实，也记录了四家正在收敛的四个层面与 monorepo 里四种不同的"就近"语义）。
+概念在四个工具里的叫法和位置各不相同：memory 文件、条件规则、skills、hooks、沙箱、审批、MCP、headless。[`rosetta/`](rosetta/) 是一张**逐格对照官方文档核实**的对照表——每个单元格本身就是官方文档链接，点开即可验证（2026-09-11 逐格复核，也记录了四家正在收敛的四个层面与 monorepo 里四种不同的"就近"语义）。
 
 一个立刻能用的结论：**根级 `AGENTS.md` 做单一事实源**（[agents.md](https://agents.md) 开放标准，60k+ 项目在用；Cursor 与 Copilot 已原生读取），`CLAUDE.md` 软链过去：
 
@@ -188,7 +188,7 @@ Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是
 ## 什么时候别用
 
 - **想要效率或性能数字。** 这里没有，而且是刻意的。[`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) 只数本仓库自己的产物（40 个带出处单元格、13 个章节、4 个工具、5 条 lint 规则、8 项 doctor 检查、10 项 verify-doctor 检查、这些检查能识别的 5 个技术栈、4/4 个 CLI 支持 `--json`、0 依赖）。没有任何「照做就更快/更准」的断言——因为没测过。
-- **需要保证时效的厂商事实。** 对照表标的是 **2026-08**。这个领域几个月一变——每格都是链接正是为了这个：下判断前把你真正依赖的那一格点开重核一遍。
+- **需要保证时效的厂商事实。** 对照表标的是 **2026-09-11**（首轮 2026-08）。这个领域几个月一变——每格都是链接正是为了这个：下判断前把你真正依赖的那一格点开重核一遍。
 - **想让工具直接改你的文件。** 除 `agents-init`（写新的 AGENTS.md，已存在时不加 `--force` 拒绝覆盖）外，其余都只读只报。
 - **想让 `verify-doctor` 顺手把缺口补上。** 它是检测器不是修复器：只报出缺在哪个阶段、缺哪份证据，不动你的测试、配置和 CI。它也不自带 dependency-cruiser 或 betterer——零依赖是这里的规矩——只检测你是否已经采用了这类工具。
 - **想让 `verify-doctor` 什么语言都懂。** 它的探测是按生态写的，目前覆盖五个栈：**JS/TS、Python、Go、Rust、Java/Kotlin**。其他语言上，恰好有四项仍然能给出结论——`verify-command`、`failure-artifacts`、`module-boundary`、`evidence-template`，因为它们读的是 CI YAML 与仓库文件而不是源码；另外五项 `determinism`、`type-strict`、`lint-hardness`、`escape-ratchet`、`flaky-quarantine` 在那里**永远不会报 `ok`**：无可检之物时报 `info` 并写明不适用的原因，只有出现与语言无关的命中（例如验证命令没固定 `TZ`）才升到 `warn`。`ui-evidence` 不在这两列里：它认的是 Playwright/Cypress 配置而不是语言探针，任何技术栈上都有效，没有浏览器测试框架时报 `info` 而不是绿灯。这是设计规则而不是没做完：**某项检查无可检之物时一律报 `info`，绝不报 `ok`**；`ok` 只能表示「查过了，确实干净」。一个实际含义是「这条探测不适合你的仓库」的绿灯，信息量为零——它正是 [第 10 章](practices/10-hard-constraints.md) 批判的「warn 等于不存在」的镜像。
@@ -207,7 +207,7 @@ Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是
 这是本仓库的建议，实现就一行 `ln -s AGENTS.md CLAUDE.md`：`AGENTS.md` 是 Cursor 与 Copilot 已原生读取的开放标准，软链过去意味着只维护一份而不是每家一份。`agents-doctor` 按三档评价——软链 ok，内容相同的独立副本 info（能用，但会漂移），已漂移或缺失 warn。代价是：软链意味着所有工具看到完全相同的指令，如果你确实需要某家专属的指引，这样就不合适。
 
 **对照表有多新？厂商改了怎么办？**
-2026-08 逐格核实，日期写在表上而不是暗示。每个单元格的文字本身就是官方链接，所以任何一格都能一键重核，不必整表照信。修正以 PR 形式接收，要求附官方链接；过期条目直接删除，而不是加注保留。
+2026-09-11 逐格复核（首轮 2026-08），日期写在表上而不是暗示。每个单元格的文字本身就是官方链接，所以任何一格都能一键重核，不必整表照信。修正以 PR 形式接收，要求附官方链接；过期条目直接删除，而不是加注保留。
 
 **许可是什么，能用在公司内部文档里吗？**
 代码 MIT；文档内容同时以 CC BY 4.0 提供，所以章节和表格行可以署名后拷进内部文档。引用时请引承载该断言的那一页（例如 `practices/05-permissions-sandbox.md`），并保留背后的官方链接——这样你的读者也拿到了那张收据。

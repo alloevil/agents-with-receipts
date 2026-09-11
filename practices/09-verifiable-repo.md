@@ -37,7 +37,7 @@
 
 **边界**：monorepo 用运行器自带的过滤参数收窄范围（`make check PKG=web`），而不是给每个包各造一套入口。已有成熟运行器的仓库直接沿用；为了"统一"再套一层 wrapper 只会多一个分叉点。
 
-还有一条更容易踩的边界：**入口与测试都是按生态定义的，不要按文件名去猜。** 不少生态自带约定入口，仓库里没有 Makefile 不等于没有入口——`Cargo.toml` 在场时 `cargo test` 就是那条命令（官方定义为"编译并执行单元测试与集成测试"，见 [cargo test](https://doc.rust-lang.org/cargo/commands/cargo-test.html)），`go.mod` 在场时是 `go test ./...`，`pom.xml` 在场时是 `mvn test`。同理，**测试发现只按路径匹配会在整类生态上判空**：Rust 的单元测试按官方约定就放在 `src/` 的源文件里，用 `#[cfg(test)] mod tests` 包住、`#[test]` 标注函数，只有集成测试才进 `tests/` 目录（[Test Organization](https://doc.rust-lang.org/book/ch11-03-test-organization.html)："You'll put unit tests in the *src* directory in each file with the code that they're testing"）；Java/Kotlin 的测试则在另一棵目录树里，Maven 标准布局把 `src/test/java` 定义为 Test sources（[Standard Directory Layout](https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html)），Gradle 的 Java 插件对应一个专门的 `test` source set（[Testing in Java 与 JVM 项目](https://docs.gradle.org/current/userguide/java_testing.html)）。于是一个有上百个 `#[test]` 的仓库会被"只认 `tests/` 目录、`*.test.ts`、`_test.go`、`test_*.py`"的工具报成「未发现测试文件，验证回路不存在」——这个结论比没有结论更贵，它会让 agent 去补一套已经存在的测试，或者据此判定这个仓库不能自动验证。
+还有一条更容易踩的边界：**入口与测试都是按生态定义的，不要按文件名去猜。** 不少生态自带约定入口，仓库里没有 Makefile 不等于没有入口——`Cargo.toml` 在场时 `cargo test` 就是那条命令（官方定义为 "Compile and execute unit, integration, and documentation tests"，见 [cargo test](https://doc.rust-lang.org/cargo/commands/cargo-test.html)），`go.mod` 在场时是 `go test ./...`（[go test](https://pkg.go.dev/cmd/go#hdr-Test_packages)），`pom.xml` 在场时是 `mvn test`（[Surefire: usage](https://maven.apache.org/surefire/maven-surefire-plugin/usage.html)）。同理，**测试发现只按路径匹配会在整类生态上判空**：Rust 的单元测试按官方约定就放在 `src/` 的源文件里，用 `#[cfg(test)] mod tests` 包住、`#[test]` 标注函数，只有集成测试才进 `tests/` 目录（[Test Organization](https://doc.rust-lang.org/book/ch11-03-test-organization.html)："You'll put unit tests in the *src* directory in each file with the code that they're testing"）；Java/Kotlin 的测试则在另一棵目录树里，Maven 标准布局把 `src/test/java` 定义为 Test sources（[Standard Directory Layout](https://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html)），Gradle 的 Java 插件对应一个专门的 `test` source set（[Testing in Java 与 JVM 项目](https://docs.gradle.org/current/userguide/java_testing.html)）。于是一个有上百个 `#[test]` 的仓库会被"只认 `tests/` 目录、`*.test.ts`、`_test.go`、`test_*.py`"的工具报成「未发现测试文件，验证回路不存在」——这个结论比没有结论更贵，它会让 agent 去补一套已经存在的测试，或者据此判定这个仓库不能自动验证。
 
 可泛化的两条：**识别按生态分派**——先认 manifest（`package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml` / `pom.xml`），再用该生态的测试标记去数，路径约定只是其中一种标记；**认不出来时报「不适用」而不是报「不存在」**——前者告诉读者该补探测规则，后者会直接抹掉仓库既有的验证能力，而且抹得毫无声响。这条对所有按文件名工作的工具都成立：覆盖率门、flaky 扫描、测试计数看板，判空之前先问一句"是这个仓库没有，还是我不认识这个生态"。
 
@@ -103,7 +103,7 @@
         ${{ ... }} 当 Liquid 变量解析并静默丢掉，线上就只剩一个孤零零的 $。
         用 HTML 注释包住 raw 标签，GitHub 上不可见，Jekyll 上生效（见 CONTRIBUTING.md）。 -->
    ```yaml
-   - uses: actions/upload-artifact@v4
+   - uses: actions/upload-artifact@v7
      if: ${{ !cancelled() }}
      with:
        name: evidence

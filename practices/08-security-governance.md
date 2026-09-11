@@ -1,6 +1,6 @@
 # 08 — 安全与团队治理
 
-> 适用工具：Claude Code · Codex · Cursor（工具专属行为逐条标注） · 验证于 2026-08
+> 适用工具：Claude Code · Codex · Cursor（工具专属行为逐条标注） · 验证于 2026-09
 
 agent 能读网页、读文件、跑命令，这三个能力各自对应一类安全事故：注入指令的网页、泄露进上下文的凭据、没人批准就执行的不可逆操作。本章给出把这三类风险变成可配置、可评审、可留痕的具体做法。
 
@@ -137,7 +137,7 @@ agent 能读网页、读文件、跑命令，这三个能力各自对应一类�
 
 3. 个人偏好留在用户级文件（`~/.claude/settings.json`、`~/.codex/config.toml`），不污染仓库。两层合并生效：Claude Code 的 hooks 跨层合并而非覆盖，Codex 加载所有层的匹配 hooks。
 
-**依据**：Claude Code 官方标注 `.claude/settings.json` "can be committed to the repo"、项目级 subagent 建议 "Check them into version control"（[Hooks 参考](https://code.claude.com/docs/en/hooks) · [Subagents 文档](https://code.claude.com/docs/en/sub-agents)）；Codex 仓库级 hook 位置与多层合并见 [Codex Hooks 文档](https://learn.chatgpt.com/docs/hooks)；Cursor 官方："Project rules live in `.cursor/rules` … version-controlled"、"Check your rules into git so your whole team benefits"（[Cursor Rules 文档](https://cursor.com/docs/rules.md)）。
+**依据**：Claude Code 官方标注 `.claude/settings.json` "can be committed to the repo"、项目级 subagent 建议 "Check them into version control"（[Hooks 参考](https://code.claude.com/docs/en/hooks) · [Subagents 文档](https://code.claude.com/docs/en/sub-agents)）；Codex 仓库级 hook 位置与多层合并见 [Codex Hooks 文档](https://developers.openai.com/codex/hooks)；Cursor 官方："Project rules live in `.cursor/rules` … version-controlled"、"Check your rules into git so your whole team benefits"（[Cursor Rules 文档](https://cursor.com/docs/rules.md)）。
 
 **边界**：含 token、个人机器路径的配置不入库。Claude Code 把这类内容写进 `.claude/settings.local.json` 并自动 gitignore——不要把它挪进受版本控制的文件。
 
@@ -161,9 +161,9 @@ agent 能读网页、读文件、跑命令，这三个能力各自对应一类�
 
 2. 让审批本身变成 diff：会话里点 "Yes, don't ask again" 时，Claude Code 把放行规则写进 `.claude/settings.local.json`。定期审查这个文件，把值得团队共享的放行挪进受评审的 `.claude/settings.json`，其余删掉——每条长期授权都有 commit 和 reviewer。
 
-3. 需要独立审计日志时用 hook：Codex 官方列出的 hooks 用途第一条就是"Send the chat to a custom logging/analytics engine"；Claude Code 的 `PostToolUse` 在每次工具调用成功后触发，可以把工具名和参数追加到日志文件。
+3. 需要独立审计日志时用 hook：Codex 官方列出的 hooks 用途第一条就是"Send the conversation to a custom logging/analytics engine"；Claude Code 的 `PostToolUse` 在每次工具调用成功后触发，可以把工具名和参数追加到日志文件。
 
-**依据**：ask 规则语法、deny → ask → allow 求值顺序与 "Yes, don't ask again" 写入 `settings.local.json` 见 [Permissions 文档](https://code.claude.com/docs/en/permissions)；ask 规则在 sandbox 自动放行下仍强制提示见 [Sandboxing 文档](https://code.claude.com/docs/en/sandboxing)；hook 做日志见 [Codex Hooks 文档](https://learn.chatgpt.com/docs/hooks) 与 [Hooks 参考](https://code.claude.com/docs/en/hooks)。
+**依据**：ask 规则语法、deny → ask → allow 求值顺序与 "Yes, don't ask again" 写入 `settings.local.json` 见 [Permissions 文档](https://code.claude.com/docs/en/permissions)；ask 规则在 sandbox 自动放行下仍强制提示见 [Sandboxing 文档](https://code.claude.com/docs/en/sandboxing)；hook 做日志见 [Codex Hooks 文档](https://developers.openai.com/codex/hooks) 与 [Hooks 参考](https://code.claude.com/docs/en/hooks)。
 
 **边界**：CI / headless 无人值守场景没有人回答提示——不要靠 ask 规则，直接不授予该权限，把 push / 发布留给流水线的独立审批环节。
 
@@ -190,7 +190,7 @@ agent 能读网页、读文件、跑命令，这三个能力各自对应一类�
 
 4. 审查清单固定三问：这个 server/hook 要什么凭据？它会拉取外部内容吗（拉取即引入 8.1 的注入面）？它的更新渠道是谁控制的？答不上来的不装。
 
-**依据**：MCP 信任警告、`.mcp.json` 待审批状态与未信任目录不自批见 [MCP 文档](https://code.claude.com/docs/en/mcp)；hook 授信、哈希绑定与 `/hooks` 审查流程见 [Codex Hooks 文档](https://learn.chatgpt.com/docs/hooks)。
+**依据**：MCP 信任警告、`.mcp.json` 待审批状态与未信任目录不自批见 [MCP 文档](https://code.claude.com/docs/en/mcp)；hook 授信、哈希绑定与 `/hooks` 审查流程见 [Codex Hooks 文档](https://developers.openai.com/codex/hooks)。
 
 **边界**：`--dangerously-bypass-hook-trust` 只用于在 Codex 之外已完成 hook 来源审计的一次性自动化（官方原文限定），交互式日常使用不碰它。
 

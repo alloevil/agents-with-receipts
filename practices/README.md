@@ -1,6 +1,6 @@
 # 实践地图
 
-十三个章节 + 一篇可跟做的 walkthrough，分两条轴：01–08 与 12 讲 agent **读得懂**这个仓库（12 是接手陌生代码库时的心智模型：问运行时、问历史动机、要取舍），09–11 讲 agent **验得动**自己的工作成果。**只放有出处的断言**：每条实践按「场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界」展开，验证于 2026-08（11、12 章验证于 2026-09），过期即删。
+十三个章节 + 一篇可跟做的 walkthrough，分两条轴：01–08 与 12 讲 agent **读得懂**这个仓库（12 是接手陌生代码库时的心智模型：问运行时、问历史动机、要取舍），09–11 讲 agent **验得动**自己的工作成果。**只放有出处的断言**：每条实践按「场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界」展开，验证于 2026-09（首轮 2026-08），过期即删。
 
 ## 阅读顺序
 
@@ -13,7 +13,7 @@
 | 轴 | 章 | 这章回答什么 | 对应检查（`--json` 的 `id`） |
 |---|---|---|---|
 | 读得懂 | [00 从零配齐（可跟做）](00-agent-ready-walkthrough.md) | 一个仓库从没有任何基建，到 lint 进 CI 的完整动线 | `agentsmd-lint` 的 5 条规则 · `agents-doctor` 的 `ci-gate` · `agents-init` 生成起点 |
-| 读得懂 | [01 Memory 文件](01-memory-files.md) | AGENTS.md / CLAUDE.md 写什么、删什么、怎么维护 | `agentsmd-lint` 的 `max-lines` · `placeholder` · `vague` · `dead-script` · `empty-section` · `agents-doctor` 的 `agents-md` · `claude-md` |
+| 读得懂 | [01 Memory 文件](01-memory-files.md) | AGENTS.md / CLAUDE.md 写什么、删什么、怎么维护，以及怎么审计 Claude 的 auto memory | `agentsmd-lint` 的 `max-lines` · `placeholder` · `vague` · `dead-script` · `empty-section` · `agents-doctor` 的 `agents-md` · `claude-md` |
 | 读得懂 | [02 机制选型](02-mechanism-selection.md) | 同一件事该写成 memory、rule、skill、hook 还是 subagent | `agents-doctor` 的 `rules` · `hooks` · `skills` |
 | 读得懂 | [03 任务框架与规划](03-task-framing.md) | 怎么把任务写成 agent 能执行、能自查的样子 | 无 —— 任务写法没有机械检查项 |
 | 读得懂 | [04 验证闭环](04-verification.md) | agent-TDD、独立评审、diff 对账 | `verify-doctor` 的 `evidence-template` |

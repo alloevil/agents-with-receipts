@@ -1,6 +1,6 @@
 # 07 — 并行与编排
 
-> 适用工具：Claude Code · Codex · Cursor · Copilot · 验证于 2026-08
+> 适用工具：Claude Code · Codex · Cursor · Copilot · 验证于 2026-09
 
 单个 agent 会话的吞吐上限由上下文窗口和串行执行决定。本章解决的问题是：哪些工作可以拆给多个 agent 并行、怎么拆才不会互相踩、以及拆完之后怎么安全地合回来。
 
@@ -23,7 +23,7 @@
 每个 subagent 只读代码，返回带文件路径引用的清单。
 ```
 
-**依据**：Codex 官方建议从读多的任务（探索、测试、triage、总结）起步用并行 agent，并对并行写代码保持警惕——多个 agent 同时编辑会产生冲突和协调开销（[Codex: Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents)）。
+**依据**：Codex 官方建议从读多的任务（探索、测试、triage、总结）起步用并行 agent，并对并行写代码保持警惕——多个 agent 同时编辑会产生冲突和协调开销（[Codex: Subagents](https://developers.openai.com/codex/subagents)）。
 
 **边界**：每个 subagent 独立消耗 token，官方明确并行工作流比同等的单 agent 运行更贵；两分钟能串行做完的小事不值得编排开销。
 
@@ -48,7 +48,7 @@
 完成后不要合并，停在分支上等待集成指令。
 ```
 
-**依据**：Codex 官方指出多个 agent 同时编辑代码会产生冲突并增加协调开销（[Codex: Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents)）；Anthropic 对并行会话的对应建议是用隔离检出让"edits don't collide"（[Claude Code 官方指南](https://code.claude.com/docs/en/best-practices)）。
+**依据**：Codex 官方指出多个 agent 同时编辑代码会产生冲突并增加协调开销（[Codex: Subagents](https://developers.openai.com/codex/subagents)）；Anthropic 对并行会话的对应建议是用隔离检出让"edits don't collide"（[Claude Code 官方指南](https://code.claude.com/docs/en/best-practices)）。
 
 **边界**：所有权表本身有维护成本。两个 agent 各改一个互不相干的目录时，prompt 里一句"只改 X 目录"即可，不需要完整的表。
 
@@ -89,7 +89,7 @@ git branch -d agent/auth agent/search
 git worktree list
 ```
 
-`git worktree list` 最后应只剩主检出一行；若 remove 报错说明 worktree 内有未提交改动，先回去处理再清理。
+`git worktree list` 最后应只剩主检出一行；remove 只接受干净的 worktree——有未提交改动**或未跟踪文件**都会报错，先回去处理（或确认可丢弃后再 `--force`）。
 
 4. Claude Code 的 subagent 还能在定义文件里声明 `isolation: worktree`，由工具在会话内自动创建并守护隔离检出，不需要手工执行上述命令。
 
@@ -120,9 +120,9 @@ model: sonnet
 附文件路径与行号，不提风格意见。
 ```
 
-4. 自定义 subagent 定义文件位置：Claude Code 用 `.claude/agents/*.md`（用户级 `~/.claude/agents/`），Codex 用 `.codex/agents/*.toml`（用户级 `~/.codex/agents/`），Cursor 用 `.cursor/agents/*.md` 并兼容读取 `.claude/agents/` 与 `.codex/agents/`；Copilot 官方文档（截至验证日期）没有 subagent 定义文件机制，其可核实的按需定制入口是 agent skills。
+4. 自定义 subagent 定义文件位置：Claude Code 用 `.claude/agents/*.md`（用户级 `~/.claude/agents/`），Codex 用 `.codex/agents/*.toml`（用户级 `~/.codex/agents/`），Cursor 用 `.cursor/agents/*.md` 并兼容读取 `.claude/agents/` 与 `.codex/agents/`；Copilot 用 `.github/agents/*.agent.md`（仓库级），frontmatter 可声明 tools / model / mcp-servers。
 
-**依据**：Claude Code 定义了只读的 Explore/Plan 内置 subagent 与 `.claude/agents/` 自定义格式（[Claude Code: Subagents](https://code.claude.com/docs/en/sub-agents)）；Codex 内置 default/worker/explorer 并从 `.codex/agents/` 读取 TOML 自定义 agent（[Codex: Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents)）；Cursor 内置 Explore/Bash/Browser 并列出三个兼容目录（[Cursor: Subagents](https://cursor.com/docs/subagents.md)）；对抗式评审 subagent 的用法见 [Claude Code 官方指南](https://code.claude.com/docs/en/best-practices)；Copilot 的 skills 目录见 [Copilot: About agent skills](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)。
+**依据**：Claude Code 定义了只读的 Explore/Plan 内置 subagent 与 `.claude/agents/` 自定义格式（[Claude Code: Subagents](https://code.claude.com/docs/en/sub-agents)）；Codex 内置 default/worker/explorer 并从 `.codex/agents/` 读取 TOML 自定义 agent（[Codex: Subagents](https://developers.openai.com/codex/subagents)）；Cursor 内置 Explore/Bash/Browser 并列出三个兼容目录（[Cursor: Subagents](https://cursor.com/docs/subagents.md)）；对抗式评审 subagent 的用法见 [Claude Code 官方指南](https://code.claude.com/docs/en/best-practices)；Copilot 的 `.github/agents/*.agent.md` 与内置 explore/task/general-purpose/code-review 等 subagent 见 [Copilot: About custom agents](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-custom-agents)。
 
 **边界**：评审型 agent 被要求找问题时总能找出一些。Anthropic 官方提醒：只处理影响正确性或既定需求的发现，其余当可选项——否则评审意见会把实现推向过度设计。
 
@@ -156,7 +156,7 @@ done
 3. 先在 2-3 个目标上试跑，根据失败样本改 prompt，再对全量放行。
 4. 要求每次调用输出机器可读的结果（`OK`/`FAIL` 或 `--json` 事件流），失败项收集后单独重派，不混在成功批次里重跑。
 
-**依据**：Anthropic 官方的 fan-out 模式即"生成清单 → 循环调用 `claude -p` → 小样本试跑再放量"，并用 `--allowedTools` 限权（[Claude Code 官方指南](https://code.claude.com/docs/en/best-practices)）；`claude -p` 与 `codex exec` 是两家官方的脚本化入口，后者默认只读沙箱、写操作需显式 `--sandbox workspace-write`（[Claude Code: Headless](https://code.claude.com/docs/en/headless)、[Codex: Non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode)）。
+**依据**：Anthropic 官方的 fan-out 模式即"生成清单 → 循环调用 `claude -p` → 小样本试跑再放量"，并用 `--allowedTools` 限权（[Claude Code 官方指南](https://code.claude.com/docs/en/best-practices)）；`claude -p` 与 `codex exec` 是两家官方的脚本化入口，后者默认只读沙箱、写操作需显式 `--sandbox workspace-write`（[Claude Code: Headless](https://code.claude.com/docs/en/headless)、[Codex: Non-interactive mode](https://developers.openai.com/codex/noninteractive)）。
 
 **边界**：需要跨文件判断力的任务（架构调整、边界模糊的重构）不属于批量派发。`--sandbox danger-full-access` 只用在隔离的 CI runner 或容器里，Codex 官方对此有同样限定。
 
