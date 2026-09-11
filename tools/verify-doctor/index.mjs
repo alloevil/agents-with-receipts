@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // verify-doctor — 仓库「验得动」体检器：agent 能否自己验证工作成果。零依赖，Node ≥ 20。
 //
-// 按阶段门跑 9 项检查（阶段 0 → 5，前一阶段没达标，进下一阶段没有意义）：
+// 按阶段门跑 10 项检查（阶段 0 → 5，前一阶段没达标，进下一阶段没有意义）：
 //   verify-command     阶段 0  一条命令起应用 + 一条命令跑全量验证
 //   determinism        阶段 1  测试无硬等待 / 真实时钟 / 真实网络，验证命令固定 TZ
 //   failure-artifacts  阶段 2  CI 有机器可解析报告 + if: always() 的证据 artifact
+//   ui-evidence        阶段 2  浏览器测试框架失败时保留截图 / 录屏 / trace
 //   module-boundary    阶段 3  模块与依赖边界有机械约束（结构层 > 机械层）
 //   type-strict        阶段 3  类型层的逃逸口是否封死（TS strict / mypy·pyright strict）
 //   lint-hardness      阶段 3  lint 规则是 error 不是 warn、警告零容忍、生成物 drift 门
@@ -554,6 +555,85 @@ function checkFailureArtifacts(ctx) {
     return fold('failure-artifacts', 2, findings);
 }
 
+/**
+ * 阶段 2 UI 证据：浏览器测试框架是否在失败时保留截图 / 录屏 / trace。
+ * UI 类工作的失败光看断言输出修不动——「差两个像素」「按钮被遮挡」只有图能说清。
+ * 只有 Playwright 与 Cypress 有配置级探针（config 字段决定失败时留不留证据）；
+ * Selenium / Puppeteer 的截图靠测试代码显式调用，没有配置可查，报 info「不适用」，
+ * 绝不用一句「未发现问题」冒充核实过。框架一个都没识别到时同样报 info。
+ */
+function checkUiEvidence(ctx) {
+    const PLAYWRIGHT_CONFIG_RE = /(^|\/)playwright\.config\.[cm]?[jt]s$/;
+    const CYPRESS_CONFIG_RE = /(^|\/)cypress\.config\.[cm]?[jt]s$/;
+    const pkgText = ctx.has(/(^|\/)package\.json$/) ? ctx.read('package.json') : '';
+    const hasDep = name => new RegExp(`"${name}"\\s*:`).test(pkgText);
+    // Playwright 证据三件套：trace / 失败截图 / 录屏，值为 off/none 之外任意一档即算配置过
+    const PW_EVIDENCE_RE = /\b(?:trace|screenshot|video)\s*:\s*['"](?!(?:off|none))[\w-]+/;
+
+    const findings = [];
+    const configOf = re => {
+        const file = ctx.pick(re)[0];
+        return file ? ctx.read(file) : null;
+    };
+
+    const pwConfig = configOf(PLAYWRIGHT_CONFIG_RE);
+    if (pwConfig !== null || hasDep('@playwright/test') || hasDep('playwright')) {
+        if (pwConfig === null) {
+            findings.push({
+                level: 'warn',
+                message: '有 Playwright 依赖但没有 playwright.config，trace/截图/录屏默认全是关的，失败只剩断言文本',
+                advice: '建 playwright.config 并在 use 里配 trace: "retain-on-failure"、screenshot: "only-on-failure"（https://playwright.dev/docs/api/class-testoptions#test-options-trace · https://playwright.dev/docs/trace-viewer）',
+            });
+        } else if (PW_EVIDENCE_RE.test(pwConfig)) {
+            findings.push({ level: 'ok', message: 'Playwright 失败时保留视觉证据（trace/截图/录屏至少一档）' });
+        } else {
+            findings.push({
+                level: 'warn',
+                message: 'Playwright 配置里没开任何失败证据（trace/screenshot/video），UI 失败只剩断言文本',
+                advice: 'use 里加 trace: "retain-on-failure"（失败留追踪）与 screenshot: "only-on-failure"，需要动效再开 video（https://playwright.dev/docs/trace-viewer · https://playwright.dev/docs/videos · https://playwright.dev/docs/api/class-testoptions#test-options-trace）',
+            });
+        }
+    }
+
+    const cypConfig = configOf(CYPRESS_CONFIG_RE);
+    if (cypConfig !== null || hasDep('cypress')) {
+        const config = cypConfig ?? '';
+        const screenshotsOff = /screenshotOnRunFailure\s*:\s*false/.test(config);
+        const videoOn = /video\s*:\s*true/.test(config);
+        if (screenshotsOff && !videoOn) {
+            findings.push({
+                level: 'warn',
+                message: 'Cypress 关掉了失败截图（screenshotOnRunFailure: false）且没开录像，UI 失败没有留下任何画面',
+                advice: '删掉 screenshotOnRunFailure: false 或改回 true；要复盘交互过程再加 video: true（https://docs.cypress.io/app/guides/screenshots-and-videos）',
+            });
+        } else if (videoOn) {
+            findings.push({ level: 'ok', message: 'Cypress 失败截图（默认开启）+ 录像已开' });
+        } else {
+            findings.push({ level: 'ok', message: 'Cypress 失败截图默认开启（screenshotOnRunFailure）' });
+        }
+    }
+
+    if (findings.length === 0) {
+        const probeless = [
+            [hasDep('puppeteer'), 'Puppeteer'],
+            [hasDep('selenium-webdriver'), 'Selenium（JS）'],
+            [ctx.inAny(/(^|\/)(pyproject\.toml|requirements[^/]*\.txt)$/, /\b(?:playwright|selenium)\b/i), 'Python 的 playwright/selenium'],
+            [ctx.inAny(/(^|\/)(pom\.xml|build\.gradle(\.kts)?)$/, /selenium/i), 'Java 的 selenium'],
+        ].filter(([hit]) => hit).map(([, name]) => name);
+        if (probeless.length > 0) {
+            return fold('ui-evidence', 2, [{
+                level: 'info',
+                message: `不适用：识别到 ${probeless.join('、')}，但截图/录屏靠测试代码显式调用，没有配置级探针可查，只能人工核对`,
+            }]);
+        }
+        return fold('ui-evidence', 2, [{
+            level: 'info',
+            message: '不适用：未发现浏览器/UI 测试框架（Playwright / Cypress / Selenium / Puppeteer），没有截图/录屏证据可查',
+        }]);
+    }
+    return fold('ui-evidence', 2, findings);
+}
+
 /** 阶段 3 结构层：模块与依赖边界，报告命中的最强一档。 */
 function checkModuleBoundary(ctx) {
     const hasGo = ctx.stacks.includes('go');
@@ -1063,6 +1143,7 @@ export function diagnose(repoDir) {
         checkVerifyCommand(ctx),
         checkDeterminism(ctx),
         checkFailureArtifacts(ctx),
+        checkUiEvidence(ctx),
         checkModuleBoundary(ctx),
         checkTypeStrict(ctx),
         checkLintHardness(ctx),

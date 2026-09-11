@@ -2,7 +2,7 @@
 
 仓库 agent-ready 体检器。零依赖，Node ≥ 20。
 
-一条命令回答「这个仓库对 AI agent 友好吗」——memory 文件、软链、hooks、敏感文件、CI 门禁，7 项一次查完。路径清单与 rosetta/README.md 的跨工具对照一致。
+一条命令回答「这个仓库对 AI agent 友好吗」——memory 文件、软链、hooks、决策记录、敏感文件、CI 门禁，8 项一次查完。路径清单与 rosetta/README.md 的跨工具对照一致。
 
 ## 用法
 
@@ -24,6 +24,7 @@ node tools/agents-doctor/index.mjs --help
 | `rules` | info | `.claude/rules/*.md`、`.cursor/rules/*.mdc`、`.github/instructions/*.instructions.md` 哪几家已配置（可选项） |
 | `hooks` | info/warn | `.claude/settings.json` 的 `hooks` 键、`.codex/hooks.json`、`.cursor/hooks.json`、`.github/hooks/*.json`；settings.json 解析失败 warn |
 | `skills` | info | `.claude/skills/*/SKILL.md`、`.agents/skills/*/SKILL.md`、`.github/skills/*/SKILL.md` 各有几个 |
+| `adr` | info/ok/warn | `docs/adr` 等决策记录目录或 `*.adr.md` 文件存在且被 AGENTS.md 提到 → ok；存在但 AGENTS.md 没指到 → warn（agent 不知道历史动机在哪）；没有 → info（可选项） |
 | `secrets` | error/ok | `.env` / `.env.local` / `credentials.json` / `cookies.json` 存在时必须被 `.gitignore` 覆盖，否则 error |
 | `ci-gate` | ok/info | `.github/workflows/*.y*ml` 里有 `agentsmd-lint` 门禁 ok；有 CI 无门禁 info（见 practices/00 Step 5） |
 
@@ -45,7 +46,7 @@ node tools/agents-doctor/index.mjs /tmp/demo-app --json
     "ok": 1,
     "warn": 1,
     "error": 1,
-    "info": 4
+    "info": 5
   },
   "results": [
     {
@@ -76,6 +77,12 @@ node tools/agents-doctor/index.mjs /tmp/demo-app --json
       "message": "没有 skills（可选项）"
     },
     {
+      "id": "adr",
+      "level": "info",
+      "message": "没有决策记录（可选项）——agent 看得懂现状，但查不到「为什么当初这样做」",
+      "advice": "把重大取舍记成 ADR 放进 docs/adr/（https://docs.aws.amazon.com/prescriptive-guidance/latest/architectural-decision-records/what-is-an-adr.html），并从 AGENTS.md 指过去"
+    },
+    {
       "id": "secrets",
       "level": "ok",
       "message": "根目录没有常见敏感文件"
@@ -95,7 +102,7 @@ node tools/agents-doctor/index.mjs /tmp/demo-app --json
 | `tool` | 工具名，固定 `agents-doctor` |
 | `target` | 被体检仓库的绝对路径 |
 | `summary` | `ok` / `warn` / `error` / `info` 四个计数，等于 `results` 里各 level 的条数 |
-| `results[].id` | 上表 7 个检查 id，顺序固定，一次体检各出现一次 |
+| `results[].id` | 上表 8 个检查 id，顺序固定，一次体检各出现一次 |
 | `results[].level` | 只有 `ok` / `warn` / `error` / `info` 四个取值 |
 | `results[].message` | 结论，与人类输出同一句话 |
 | `results[].advice` | 可选：怎么修。没有可给的建议时省略这个键，不会是 null |

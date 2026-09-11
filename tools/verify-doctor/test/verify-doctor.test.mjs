@@ -76,11 +76,11 @@ const CLEAN = {
 const byId = (checks, id) => checks.find(c => c.id === id);
 
 const IDS = [
-    'verify-command', 'determinism', 'failure-artifacts', 'module-boundary', 'type-strict',
+    'verify-command', 'determinism', 'failure-artifacts', 'ui-evidence', 'module-boundary', 'type-strict',
     'lint-hardness', 'escape-ratchet', 'flaky-quarantine', 'evidence-template',
 ];
 
-test('9 个检查 id 全部出现，stage 是 0–5 的整数，级别合法', () => {
+test('10 个检查 id 全部出现，stage 是 0–5 的整数，级别合法', () => {
     const checks = diagnose(makeRepo(CLEAN));
     assert.deepEqual(checks.map(c => c.id).sort(), [...IDS].sort());
     for (const c of checks) {
@@ -93,6 +93,7 @@ test('9 个检查 id 全部出现，stage 是 0–5 的整数，级别合法', (
         'verify-command': 0,
         determinism: 1,
         'failure-artifacts': 2,
+        'ui-evidence': 2,
         'module-boundary': 3,
         'type-strict': 3,
         'lint-hardness': 3,
@@ -270,6 +271,67 @@ test('CI 有 artifact 但缺 if: always() → warn 点名 always()', () => {
     assert.match(artifacts.message, /always\(\)/);
 });
 
+test('ui-evidence：无 UI 框架 info 不适用；Playwright 开了证据 ok、没开 warn、只有依赖也 warn', () => {
+    const none = byId(diagnose(makeRepo(CLEAN)), 'ui-evidence');
+    assert.equal(none.level, 'info');
+    assert.match(none.message, /不适用/);
+    assert.doesNotMatch(none.message, /未发现问题/);
+
+    const pwOn = byId(diagnose(makeRepo({
+        ...CLEAN,
+        'playwright.config.ts': "export default { use: { trace: 'retain-on-failure', screenshot: 'only-on-failure' } };\n",
+    })), 'ui-evidence');
+    assert.equal(pwOn.level, 'ok');
+    assert.match(pwOn.message, /Playwright/);
+
+    const pwOff = byId(diagnose(makeRepo({
+        ...CLEAN,
+        'playwright.config.ts': "export default { testDir: 'e2e', use: { headless: true } };\n",
+    })), 'ui-evidence');
+    assert.equal(pwOff.level, 'warn');
+    assert.match(pwOff.message, /没开任何失败证据/);
+    assert.match(pwOff.advice, /trace/);
+
+    // 只有依赖、没有 config：Playwright 默认 trace/截图/录屏全关，同样 warn
+    const depOnly = byId(diagnose(makeRepo({
+        ...CLEAN,
+        'package.json': JSON.stringify({ devDependencies: { '@playwright/test': '^1' }, scripts: { dev: 'x', check: 'y' } }),
+    })), 'ui-evidence');
+    assert.equal(depOnly.level, 'warn');
+    assert.match(depOnly.message, /没有 playwright\.config/);
+});
+
+test('ui-evidence：Cypress 默认失败截图 ok，显式关掉且无录像 warn，Selenium 报不适用而非绿灯', () => {
+    const cypDefault = byId(diagnose(makeRepo({
+        ...CLEAN,
+        'package.json': JSON.stringify({ devDependencies: { cypress: '^13' }, scripts: { dev: 'x', check: 'y' } }),
+    })), 'ui-evidence');
+    assert.equal(cypDefault.level, 'ok');
+    assert.match(cypDefault.message, /screenshotOnRunFailure/);
+
+    const cypVideo = byId(diagnose(makeRepo({
+        ...CLEAN,
+        'cypress.config.js': 'module.exports = { e2e: { video: true } };\n',
+    })), 'ui-evidence');
+    assert.equal(cypVideo.level, 'ok');
+    assert.match(cypVideo.message, /录像/);
+
+    const cypOff = byId(diagnose(makeRepo({
+        ...CLEAN,
+        'cypress.config.js': 'module.exports = { e2e: { screenshotOnRunFailure: false } };\n',
+    })), 'ui-evidence');
+    assert.equal(cypOff.level, 'warn');
+    assert.match(cypOff.message, /关掉了失败截图/);
+
+    const selenium = byId(diagnose(makeRepo({
+        ...CLEAN,
+        'package.json': JSON.stringify({ devDependencies: { 'selenium-webdriver': '^4' }, scripts: { dev: 'x', check: 'y' } }),
+    })), 'ui-evidence');
+    assert.equal(selenium.level, 'info');
+    assert.match(selenium.message, /没有配置级探针/);
+    assert.doesNotMatch(selenium.message, /未发现浏览器/);
+});
+
 test('lint 硬度：warn 档规则与缺 --max-warnings=0 都被点名；无 eslint 配置则跳过', () => {
     const soft = byId(diagnose(makeRepo({
         ...CLEAN,
@@ -331,7 +393,7 @@ test('每条 warn/error 都带 advice，且 advice 里的链接都是官方文�
     for (const link of links) assert.match(link, /^https:\/\//);
 });
 
-test('--json：stdout 只有一个 JSON 对象，9 个检查带 stage 原样进 results', () => {
+test('--json：stdout 只有一个 JSON 对象，10 个检查带 stage 原样进 results', () => {
     const dir = makeRepo(CLEAN);
     const payload = parseOnlyJson(runCli([dir, '--json']));
     assert.strictEqual(payload.tool, 'verify-doctor');

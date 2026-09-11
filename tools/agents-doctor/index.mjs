@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // agents-doctor — 仓库 agent-ready 体检器。零依赖，Node ≥ 20。
 //
-// 对一个仓库跑 7 项检查，回答"这个仓库对 AI agent 友好吗"：
+// 对一个仓库跑 8 项检查，回答"这个仓库对 AI agent 友好吗"：
 //   agents-md   根 AGENTS.md 存在且通过 agentsmd-lint
 //   claude-md   CLAUDE.md 应是指向 AGENTS.md 的软链，不该漂移
 //   rules       条件规则目录（Claude/Cursor/Copilot）有哪几家
 //   hooks       四家 hooks 配置存在性
 //   skills      三个 skills 目录下有无 SKILL.md
+//   adr         决策记录（ADR）存在且被 AGENTS.md 指到——历史动机可查
 //   secrets     .env / credentials.json 等敏感文件必须被 .gitignore 覆盖
 //   ci-gate     CI workflow 里有没有 agentsmd-lint 门禁
 //
@@ -194,7 +195,38 @@ export function diagnose(repoDir) {
         message: skillsFound.length > 0 ? `skills：${skillsFound.join('、')}` : '没有 skills（可选项）',
     });
 
-    // 6. secrets：敏感文件必须被 .gitignore 覆盖
+    // 6. adr：决策记录（ADR）存在且被 AGENTS.md 指到
+    // agent 看得懂现状，但查不到「为什么当初这样做」——决策记录是唯一不随代码漂移的动机来源。
+    // 没有它是可选项（info）；有却没接进 memory 文件才是缺口（warn）：agent 不知道它存在 = 等于没有。
+    const ADR_DIRS = ['docs/adr', 'docs/adrs', 'docs/decisions', 'docs/architecture/decisions', 'adr', 'adrs', 'decisions'];
+    const adrDirs = ADR_DIRS.filter(d => listDir(at(d), n => n.endsWith('.md')).length > 0);
+    const adrFiles = [
+        ...listDir(at(''), n => n.endsWith('.adr.md')),
+        ...listDir(at('docs'), n => n.endsWith('.adr.md')).map(n => `docs/${n}`),
+    ];
+    if (adrDirs.length === 0 && adrFiles.length === 0) {
+        checks.push({
+            id: 'adr',
+            level: 'info',
+            message: '没有决策记录（可选项）——agent 看得懂现状，但查不到「为什么当初这样做」',
+            advice: '把重大取舍记成 ADR 放进 docs/adr/（https://docs.aws.amazon.com/prescriptive-guidance/latest/architectural-decision-records/what-is-an-adr.html），并从 AGENTS.md 指过去',
+        });
+    } else {
+        const where = [...adrDirs, ...adrFiles].join('、');
+        const agentsText = hasAgents ? fs.readFileSync(agentsPath, 'utf-8') : '';
+        if (/\badrs?\b|决策记录|architecture decision/i.test(agentsText)) {
+            checks.push({ id: 'adr', level: 'ok', message: `决策记录在 ${where}，AGENTS.md 指得到` });
+        } else {
+            checks.push({
+                id: 'adr',
+                level: 'warn',
+                message: `决策记录在 ${where}，但 AGENTS.md 没提到——agent 不知道历史动机在哪`,
+                advice: `在 AGENTS.md 加一行指向 ${adrDirs[0] ?? adrFiles[0]}，否则每次会话 agent 都从零猜「为什么这样做」`,
+            });
+        }
+    }
+
+    // 7. secrets：敏感文件必须被 .gitignore 覆盖
     const SECRET_FILES = ['.env', '.env.local', 'credentials.json', 'cookies.json'];
     const present = SECRET_FILES.filter(f => fs.existsSync(at(f)));
     if (present.length === 0) {
@@ -219,7 +251,7 @@ export function diagnose(repoDir) {
         }
     }
 
-    // 7. ci-gate：workflow 里有没有 agentsmd-lint 门禁
+    // 8. ci-gate：workflow 里有没有 agentsmd-lint 门禁
     const workflowsDir = at('.github/workflows');
     const workflows = listDir(workflowsDir, n => /\.ya?ml$/.test(n));
     if (!fs.existsSync(workflowsDir)) {

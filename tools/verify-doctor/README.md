@@ -4,7 +4,7 @@
 
 `agents-doctor` 查的是另一条轴——agent 能否读懂这个仓库（memory / rules / hooks / secrets / CI 门禁）。这条轴查的是验证回路本身：一条命令能不能起应用、能不能跑全量验证，验证结果确定不确定，失败时有没有 agent 吃得下的证据，团队规矩有没有下沉成机械红牌，逃逸口有没有被棘轮锁住。
 
-9 项检查按**阶段门**排列（阶段 0 → 5）。前一阶段没达标，做下一阶段没有意义：在 flaky 率 5% 的仓库里给 PR 加自动合入，只是把运气自动化。
+10 项检查按**阶段门**排列（阶段 0 → 5）。前一阶段没达标，做下一阶段没有意义：在 flaky 率 5% 的仓库里给 PR 加自动合入，只是把运气自动化。
 
 每一项都对 5 个技术栈分别探测：**JS/TS · Python · Go · Rust · Java/Kotlin**（覆盖到什么程度见下面的技术栈覆盖表）。
 
@@ -34,6 +34,7 @@ node tools/verify-doctor/index.mjs --help
 | `verify-command` | 0 | ok/info/warn | 任务运行器（justfile/Makefile/Taskfile）；没有时认生态约定入口（`Cargo.toml` → `cargo test`·`cargo clippy`、`go.mod` → `go test ./...`、`pyproject.toml`·`tox.ini`·`noxfile.py` → pytest 系、`pom.xml` → `mvn test`、`build.gradle(.kts)` → `gradle test`）并报「识别到 X，但没有一条命令跑完全部检查」；package.json 另查 `dev`/`start` 与 `check`/`verify`/`ci`/`validate`；零测试文件 = 验证回路不存在 |
 | `determinism` | 1 | ok/warn | 按栈查硬等待（`waitForTimeout(500)` / `time.sleep` / `time.Sleep` / `thread::sleep` / `Thread.sleep`）、真实时钟与随机（`Date.now`·`Math.random` / `time.time()` / `time.Now`·`math/rand` / `SystemTime::now`·`Instant::now`·`rand::` / `new Date()`·`new Random(`）、未 mock 的网络调用（有 msw/nock/vcr/responses/httpmock/wiremock 视为已 mock）、验证命令是否固定 `TZ` |
 | `failure-artifacts` | 2 | ok/warn | `.github/workflows/` 存在、是否 `upload-artifact`、是否带 `if: always()`（失败时才拿得到证据）、测试有没有 json/junit 机器可解析输出 |
+| `ui-evidence` | 2 | ok/info/warn | 浏览器测试框架失败时是否保留视觉证据：Playwright 的 `trace`·`screenshot`·`video`（config 文件或依赖，全默认关）、Cypress 的 `screenshotOnRunFailure`（默认开）与 `video`；Selenium / Puppeteer 的截图靠测试代码显式调用，没有配置级探针 → info「不适用」，一个框架都没识别到同样 info |
 | `module-boundary` | 3 | ok/warn | 按强度取命中的最强一档：npm workspaces / Cargo workspace / Maven `<modules>` / Gradle `include(` 物理包边界 > Go `internal/` 与 Rust `pub(crate)` 编译器级隔离 > dependency-cruiser > import-linter > ArchUnit > eslint `no-restricted-imports`；全无则 warn |
 | `type-strict` | 3 | ok/info/warn | `tsconfig.json` 的 `strict` 与 `noUncheckedIndexedAccess`；Python 的 mypy `strict` / pyright `typeCheckingMode: strict`。Go·Rust·Java 的类型由编译器强制、没有独立的严格度配置层 → info「不适用」 |
 | `lint-hardness` | 3 | ok/info/warn | 判的是硬度不是「有没有配」：eslint 的 `"warn"`·`"error"` 档位计数与 `--max-warnings=0`、ruff/flake8/pylint 是否存在、clippy 是否 `-D warnings`·`deny(warnings)`（只 `-W` 等于建议）、golangci-lint 是否存在、javac 是否 `-Werror`；外加有 codegen 时的 `git diff --exit-code` drift 门 |
@@ -45,7 +46,7 @@ node tools/verify-doctor/index.mjs --help
 
 ## 技术栈覆盖
 
-9 个检查项 × 5 个技术栈，外加一行「测试文件识别」（它是 `verify-command` / `determinism` / `flaky-quarantine` 三项的共同前提，认错了后面全错）。每格写清**探测什么**；写「不适用」的格子会在报告里如实输出 `info` 加一句原因，不会假装检查过：
+10 个检查项 × 5 个技术栈，外加一行「测试文件识别」（它是 `verify-command` / `determinism` / `flaky-quarantine` 三项的共同前提，认错了后面全错）。每格写清**探测什么**；写「不适用」的格子会在报告里如实输出 `info` 加一句原因，不会假装检查过：
 
 | 检查 | JS/TS | Python | Go | Rust | Java/Kotlin |
 |---|---|---|---|---|---|
@@ -53,6 +54,7 @@ node tools/verify-doctor/index.mjs --help
 | 测试文件识别 | 路径：`*.test.*` · `*.spec.*` · `tests/` · `__tests__/` · `e2e/` | 路径：`test_*.py` · `*_test.py` · `tests/` | 路径：`*_test.go` | **内容**：`#[test]` · `#[cfg(test)]`（测试内联在源文件里，同时进源与测试集合） | 路径：`src/test/java/` · `src/test/kotlin/`；**内容**：`@Test` · `@ParameterizedTest` |
 | `determinism` | `waitForTimeout(500)` · `sleep(500)` · `Date.now` · `Math.random` · `new Date()` | `time.sleep(n)` · `time.time()` · `uuid4()` | `time.Sleep` · `time.Now` · `math/rand` | `thread::sleep` · `SystemTime::now` · `Instant::now` · `rand::` | `Thread.sleep` · `new Date()` · `new Random(` |
 | `failure-artifacts` | 与语言无关：`.github/workflows/` 的 `upload-artifact` + `if: always()`、json/junit reporter | 同左 | 同左 | 同左 | 同左 |
+| `ui-evidence` | `playwright.config.*` / `cypress.config.*` 的失败证据字段；`@playwright/test`·`playwright`·`cypress` 依赖 | `playwright` / `selenium` 依赖 → info（无配置级探针） | 不适用：无浏览器测试框架探针 | 不适用：同左 | `pom.xml`·`build.gradle` 里的 selenium → info（无配置级探针） |
 | `module-boundary` | npm `workspaces`、dependency-cruiser、eslint `no-restricted-imports` | import-linter contracts | `internal/` 编译器隔离 | `[workspace]` + `members`、`pub(crate)`（≥3 处） | Maven `<modules>`、Gradle `include(`、ArchUnit |
 | `type-strict` | `tsconfig.json` 的 `strict`、`noUncheckedIndexedAccess` | mypy `strict = true`、pyright `typeCheckingMode: strict` | 不适用：类型由编译器强制，无独立严格度配置层 | 不适用：同左 | 不适用：同左 |
 | `lint-hardness` | eslint 档位计数 + `--max-warnings=0` | ruff · flake8 · pylint 配置是否存在 | `.golangci.*` 或 CI 里的 `golangci-lint` | clippy 是否 `-D warnings` / `deny(warnings)`（只 `-W` 等于建议） | 构建里的 `-Werror` |
@@ -80,7 +82,7 @@ node tools/verify-doctor/index.mjs /tmp/demo-app --json
     "ok": 8,
     "warn": 0,
     "error": 0,
-    "info": 1
+    "info": 2
   },
   "results": [
     {
@@ -99,6 +101,12 @@ node tools/verify-doctor/index.mjs /tmp/demo-app --json
       "id": "failure-artifacts",
       "level": "ok",
       "message": "有 CI workflow；CI 上传 artifact；artifact 失败时也上传（if: always()）；测试有机器可解析输出（json/junit）",
+      "stage": 2
+    },
+    {
+      "id": "ui-evidence",
+      "level": "info",
+      "message": "不适用：未发现浏览器/UI 测试框架（Playwright / Cypress / Selenium / Puppeteer），没有截图/录屏证据可查",
       "stage": 2
     },
     {
@@ -146,7 +154,7 @@ node tools/verify-doctor/index.mjs /tmp/demo-app --json
 | `tool` | 工具名，固定 `verify-doctor` |
 | `target` | 被体检仓库的绝对路径 |
 | `summary` | `ok` / `warn` / `error` / `info` 四个计数，等于 `results` 里各 level 的条数 |
-| `results[].id` | 上表 9 个检查 id，按 stage 升序排列，一次体检各出现一次 |
+| `results[].id` | 上表 10 个检查 id，按 stage 升序排列，一次体检各出现一次 |
 | `results[].level` | 只有 `ok` / `warn` / `error` / `info` 四个取值；`--strict` 下 warn 就地变成 error（不只是退出码变红） |
 | `results[].message` | 结论，与人类输出同一句话；一个检查的多条子结论用 `；` 拼接 |
 | `results[].advice` | 可选：怎么修，含官方文档链接。没有可给的建议时省略这个键，不会是 null |
@@ -204,9 +212,9 @@ node tools/verify-doctor/index.mjs /tmp/demo-app --json
 - 结构层边界：[npm workspaces](https://docs.npmjs.com/cli/v11/using-npm/workspaces) · [Go internal 目录](https://pkg.go.dev/cmd/go#hdr-Internal_Directories) · [Cargo workspace](https://doc.rust-lang.org/cargo/reference/workspaces.html) · [Rust 可见性](https://doc.rust-lang.org/reference/visibility-and-privacy.html) · [Maven POM](https://maven.apache.org/guides/introduction/introduction-to-the-pom.html) · [Gradle 多项目](https://docs.gradle.org/current/userguide/multi_project_builds.html) · [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) · [import-linter](https://import-linter.readthedocs.io/en/stable/) · [ArchUnit](https://www.archunit.org/)
 - 各生态约定入口与 lint 硬度：[`cargo test`](https://doc.rust-lang.org/cargo/commands/cargo-test.html) · [clippy 用法](https://doc.rust-lang.org/clippy/usage.html) · [rustc lint 档位](https://doc.rust-lang.org/rustc/lints/levels.html) · [`go test`](https://pkg.go.dev/cmd/go#hdr-Test_packages) · [golangci-lint](https://golangci-lint.run/) · [tox](https://tox.wiki/en/stable/) · [ruff 配置](https://docs.astral.sh/ruff/configuration/) · [mypy 命令行](https://mypy.readthedocs.io/en/stable/command_line.html) · [pyright 配置](https://microsoft.github.io/pyright/#/configuration) · [javac `-Werror`](https://docs.oracle.com/en/java/javase/21/docs/specs/man/javac.html)
 - 隔离与错误处理：[pytest 跳过](https://docs.pytest.org/en/stable/how-to/skipping.html) · [`testing.T.Skip`](https://pkg.go.dev/testing#T.Skip) · [Rust `Result` 与 `?`](https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html) · [`thread::sleep`](https://doc.rust-lang.org/std/thread/fn.sleep.html)
-- 确定性与证据：[Playwright `waitForTimeout`](https://playwright.dev/docs/api/class-page#page-wait-for-timeout) · [Vitest `vi`](https://vitest.dev/api/vi.html) · [msw](https://mswjs.io/docs/) · [PR 模板](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository)
+- 确定性与证据：[Playwright `waitForTimeout`](https://playwright.dev/docs/api/class-page#page-wait-for-timeout) · [Playwright trace viewer](https://playwright.dev/docs/trace-viewer) · [Playwright 截图与录屏](https://playwright.dev/docs/videos) · [Playwright test options](https://playwright.dev/docs/api/class-testoptions) · [Cypress 截图与录屏](https://docs.cypress.io/app/guides/screenshots-and-videos) · [Vitest `vi`](https://vitest.dev/api/vi.html) · [msw](https://mswjs.io/docs/) · [PR 模板](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository)
 
-方法论展开见 `practices/09-verifiable-repo.md`（可验证的仓库）与 `practices/10-hard-constraints.md`（硬约束下沉）。
+方法论展开见 `practices/09-verifiable-repo.md`（可验证的仓库）、`practices/10-hard-constraints.md`（硬约束下沉）与 `practices/11-verification-skills.md`（验证技能，`ui-evidence` 一节的出处）。
 
 ## 边界
 
@@ -220,7 +228,7 @@ node tools/verify-doctor/index.mjs /tmp/demo-app --json
 - **不执行任何东西**：不跑 `cargo test`、不跑 `pytest`、不装依赖。「验证命令存在」不等于「验证命令能跑通」，更不等于「测试真的在断言什么」。
 - **`type-strict` 对编译型语言不下结论**：Go / Rust / Java 的类型由编译器强制，本工具不去判断 `unsafe` 之外的类型宽松度，也不看 `#[allow]` 关掉了哪些类型相关 lint。
 
-**给消费方的口径**：`info` 不是通过。要判断某一项真的核实过且干净，必须测 `level === 'ok'`，不能测「不是 error」或「不是 warn」——`info` 恰恰表示这一项没能力查。跨语言无关的四项（`verify-command` 的运行器与文件计数、`failure-artifacts`、`module-boundary`、`evidence-template`）是唯一能在不受支持的语言上给出 `ok` 的检查，因为它们查的是 CI 配置与仓库文件，与语言无关；其余五项在无探针时一律 `info`。这条契约有回归测试钉着（见「不受支持的技术栈（Ruby）」用例）。
+**给消费方的口径**：`info` 不是通过。要判断某一项真的核实过且干净，必须测 `level === 'ok'`，不能测「不是 error」或「不是 warn」——`info` 恰恰表示这一项没能力查。跨语言无关的四项（`verify-command` 的运行器与文件计数、`failure-artifacts`、`module-boundary`、`evidence-template`）是唯一能在不受支持的语言上给出 `ok` 的检查，因为它们查的是 CI 配置与仓库文件，与语言无关；其余五项在无探针时一律 `info`；`ui-evidence` 介于两者之间——它认的是 Playwright/Cypress 配置而不是语言探针，无浏览器测试框架时报 `info`。这条契约有回归测试钉着（见「不受支持的技术栈（Ruby）」用例）。
 
 ## 测试
 

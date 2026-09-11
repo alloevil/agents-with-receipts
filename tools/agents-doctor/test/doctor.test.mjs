@@ -173,9 +173,38 @@ test('ci-gate：有 workflow 无门禁 → info 带 advice；无 workflows 目�
     assert.match(byId(noDir, 'ci-gate').message, /没有 \.github\/workflows/);
 });
 
-const IDS = ['agents-md', 'claude-md', 'rules', 'hooks', 'skills', 'secrets', 'ci-gate'];
+test('adr：无决策记录 info 可选；有但 AGENTS.md 没指到 warn；指到则 ok', () => {
+    const none = byId(diagnose(makeRepo({ 'AGENTS.md': CLEAN_AGENTS })), 'adr');
+    assert.strictEqual(none.level, 'info');
+    assert.match(none.advice, /docs\/adr/);
 
-test('--json：stdout 只有一个 JSON 对象，7 个 check id 原样进 results', () => {
+    const orphan = byId(diagnose(makeRepo({
+        'AGENTS.md': CLEAN_AGENTS,
+        'docs/adr/0001-use-sqlite.md': '# 用 SQLite\n\n状态：已接受\n',
+    })), 'adr');
+    assert.strictEqual(orphan.level, 'warn');
+    assert.match(orphan.message, /docs\/adr/);
+    assert.match(orphan.message, /没提到/);
+    assert.match(orphan.advice, /AGENTS\.md/);
+
+    const linked = byId(diagnose(makeRepo({
+        'AGENTS.md': CLEAN_AGENTS + '\n## 决策记录\n\n- 重大取舍见 docs/adr/。\n',
+        'docs/adr/0001-use-sqlite.md': '# 用 SQLite\n',
+    })), 'adr');
+    assert.strictEqual(linked.level, 'ok');
+
+    // *.adr.md 命名约定同样被认出来
+    const dotted = byId(diagnose(makeRepo({
+        'AGENTS.md': CLEAN_AGENTS + '\n- 取舍见 storage.adr.md。\n',
+        'storage.adr.md': '# 存储选型\n',
+    })), 'adr');
+    assert.strictEqual(dotted.level, 'ok');
+    assert.match(dotted.message, /storage\.adr\.md/);
+});
+
+const IDS = ['agents-md', 'claude-md', 'rules', 'hooks', 'skills', 'adr', 'secrets', 'ci-gate'];
+
+test('--json：stdout 只有一个 JSON 对象，8 个 check id 原样进 results', () => {
     const dir = makeRepo({ 'AGENTS.md': CLEAN_AGENTS });
     const payload = parseOnlyJson(runCli([dir, '--json']));
     assert.strictEqual(payload.tool, 'agents-doctor');

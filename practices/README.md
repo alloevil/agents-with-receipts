@@ -1,10 +1,10 @@
 # 实践地图
 
-十个章节 + 一篇可跟做的 walkthrough，分两条轴：01-08 讲 agent **读得懂**这个仓库，09-10 讲 agent **验得动**自己的工作成果。**只放有出处的断言**：每条实践按「场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界」展开，验证于 2026-08，过期即删。
+十一个章节 + 一篇可跟做的 walkthrough，分两条轴：01-08 讲 agent **读得懂**这个仓库，09-11 讲 agent **验得动**自己的工作成果。**只放有出处的断言**：每条实践按「场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界」展开，验证于 2026-08（11 章验证于 2026-09），过期即删。
 
 ## 阅读顺序
 
-新上手：先跟做 [00 walkthrough](00-agent-ready-walkthrough.md)，再读 [01 Memory 文件](01-memory-files.md) 和 [02 机制选型](02-mechanism-selection.md)——这三篇解决"配置放哪、写什么"。想让 agent 自己验证、敢自动合 PR：从 [09 可验证的仓库](09-verifiable-repo.md) 的阶段门读起，再看 [10 硬约束下沉](10-hard-constraints.md)。其余章节按需查。
+新上手：先跟做 [00 walkthrough](00-agent-ready-walkthrough.md)，再读 [01 Memory 文件](01-memory-files.md) 和 [02 机制选型](02-mechanism-selection.md)——这三篇解决"配置放哪、写什么"。想让 agent 自己验证、敢自动合 PR：从 [09 可验证的仓库](09-verifiable-repo.md) 的阶段门读起，再看 [10 硬约束下沉](10-hard-constraints.md)；UI 类工作补 [11 验证技能](11-verification-skills.md)。其余章节按需查。
 
 ## 章节
 
@@ -21,6 +21,7 @@
 | [08](08-security-governance.md) | 安全与团队治理 | 不可信输入、secrets 拦截、配置入库 |
 | [09](09-verifiable-repo.md) | 可验证的仓库 | 单命令验证回路、确定性、失败证据、阶段门顺序不可跳 |
 | [10](10-hard-constraints.md) | 硬约束下沉 | 结构 > 类型 > 机械 CI > 提示；存量先立基线再转 error |
+| [11](11-verification-skills.md) | 验证技能 | UI 失败证据（trace/截图/录屏）、agent 驱动真实应用截图、视觉证据进 PR |
 
 ## 主要来源
 

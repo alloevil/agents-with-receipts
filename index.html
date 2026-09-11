@@ -171,8 +171,8 @@ footer a { color: var(--cream); }
     <p><strong>每条断言都必须回答一个问题:出处在哪?</strong>答案是可以点开的官方文档,而不是口号。市面上关于 Claude Code、Codex、Cursor 的最佳实践合集不少,但绝大多数是没有出处的断言(「CLAUDE.md 要短」「先规划再写码」)。这个仓库只回答关于一个仓库的两个问题:<strong>agent 读得懂它吗</strong>(AGENTS.md、条件规则、hooks、skills、CI 门禁),<strong>agent 在里面验得动自己的工作成果吗</strong>(一条命令跑完全部验证、确定性、失败留下的证据)。第一个问题决定 agent 会不会一开始就走错,第二个决定你敢不敢让它自己合 PR。四件东西共用同一条规则:没有出处的断言不收,过期的条目删掉而不是留着加个注解。</p>
     <ul>
       <li><strong>逐格核实的跨工具对照表(<a href="rosetta/">rosetta</a>)</strong>——把 Claude Code、OpenAI Codex、Cursor、GitHub Copilot 放在十个概念上对照:项目级 memory、用户级 memory、条件/路径规则、skills、hooks、子 agent、操作系统级沙箱、审批模式、MCP 配置、headless/CI。十行 × 四列共 40 格,每一格的文字本身就是对应官方文档页的链接,2026-08 逐格核实,方便任何人一键复核其中任意一格。</li>
-      <li><strong>有出处的实践地图(<a href="practices/">practices</a>)</strong>——十一章:一篇可跟做的 walkthrough,01–08 讲第一个问题(读得懂),09–10 讲第二个问题(验得动:把仓库改造成可被验证、把团队规矩下沉成能自动失败的硬约束)。每条实践按「场景 → 做法(可复制的示例)→ 依据(官方链接)→ 边界」展开,标注适用工具与验证日期。</li>
-      <li><strong>四个可执行的检查器(tools)</strong>——<code>agentsmd-lint</code> 给单个 memory 文件挑毛病:行数超标、模板占位符没填、含糊到 agent 无法执行的措辞、引用了不存在的 npm script、空的标题小节;<code>agents-doctor</code> 用 7 项检查看整个仓库的 agent 基建;<code>agents-init</code> 给还没有 AGENTS.md 的仓库写一份,只写它真的探测到的命令;<code>verify-doctor</code> 用 9 项检查按六个阶段报出验证回路的缺口(有没有一条命令跑完全部验证、测试是否确定、失败有没有留下可解析的证据与 artifact、跨模块引用会不会失败、逃逸口有没有被计数、flaky 有没有被清零或隔离)。<code>verify-doctor</code> 的探测是按生态写的,目前覆盖 JS/TS、Python、Go、Rust、Java/Kotlin 五个栈;其他语言上只有读 CI YAML 与仓库文件的那四项(单命令入口、失败证据与 artifact、模块边界、PR 证据模板)还能给结论,测试与逃逸口那五项一律报「不适用」并写明原因——无可检之物时报 info 不报 ok,绿灯必须有信息量。四个都是零依赖的单文件 Node ESM 脚本(Node ≥ 20)。</li>
+      <li><strong>有出处的实践地图(<a href="practices/">practices</a>)</strong>——十二章:一篇可跟做的 walkthrough,01–08 讲第一个问题(读得懂),09–11 讲第二个问题(验得动:把仓库改造成可被验证、把团队规矩下沉成能自动失败的硬约束、让 agent 对 UI 类工作产出截图/trace 级证据)。每条实践按「场景 → 做法(可复制的示例)→ 依据(官方链接)→ 边界」展开,标注适用工具与验证日期。</li>
+      <li><strong>四个可执行的检查器(tools)</strong>——<code>agentsmd-lint</code> 给单个 memory 文件挑毛病:行数超标、模板占位符没填、含糊到 agent 无法执行的措辞、引用了不存在的 npm script、空的标题小节;<code>agents-doctor</code> 用 8 项检查看整个仓库的 agent 基建;<code>agents-init</code> 给还没有 AGENTS.md 的仓库写一份,只写它真的探测到的命令;<code>verify-doctor</code> 用 10 项检查按六个阶段报出验证回路的缺口(有没有一条命令跑完全部验证、测试是否确定、失败有没有留下可解析的证据与 artifact、UI 失败有没有留下截图/trace、跨模块引用会不会失败、逃逸口有没有被计数、flaky 有没有被清零或隔离)。<code>verify-doctor</code> 的探测是按生态写的,目前覆盖 JS/TS、Python、Go、Rust、Java/Kotlin 五个栈;其他语言上只有读 CI YAML 与仓库文件的那四项(单命令入口、失败证据与 artifact、模块边界、PR 证据模板)还能给结论,测试与逃逸口那五项一律报「不适用」并写明原因(ui-evidence 认的是框架配置而不是语言探针,无浏览器测试框架时同样报 info)——无可检之物时报 info 不报 ok,绿灯必须有信息量。四个都是零依赖的单文件 Node ESM 脚本(Node ≥ 20)。</li>
       <li><strong>给 agent 的接口</strong>——四个检查器都接受 <code>--json</code>,输出同一套结构(<code>tool</code> / <code>target</code> / <code>summary</code> / <code>results</code>),<code>level</code> 只有 ok、warn、error、info 四种,stdout 里只有一个 JSON 对象,没有人类输出行也没有 ANSI 转义。退出码:0 干净,当且仅当存在 error 级结果时为 1,用法错误为 2 —— 用法错误时只往 stderr 写一行用法、stdout 保持为空,解析方不会读到半个对象。都可以原样放进 CI。这个仓库的读者一半是 agent,让它去正则匹配人类报告行不是输出格式,是接口缺失。</li>
     </ul>
     <h3>先读哪几页</h3>
@@ -182,6 +182,7 @@ footer a { color: var(--cream); }
       <li><a href="practices/05-permissions-sandbox.html">05 · 权限与沙箱</a>——四家的审批模式和操作系统级沙箱分别是什么,以及它们的边界在哪。</li>
       <li><a href="practices/09-verifiable-repo.html">09 · 可验证的仓库</a>——一条 dev 一条 check、六类不确定源、一份能直接喂给 agent 的失败报告、flaky 清零或隔离。</li>
       <li><a href="practices/10-hard-constraints.html">10 · 硬约束下沉</a>——把团队规矩从文档搬到能自动失败的层:结构 &gt; 类型 &gt; 机械 &gt; 提示,停在提示层等于承认没管住。</li>
+      <li><a href="practices/11-verification-skills.html">11 · 验证技能</a>——UI 类工作的失败断言文本说不清:失败留截图/trace、让 agent 驱动真实应用截图自证、视觉证据进 PR 流程。</li>
     </ul>
     <p class="note">上面的票根导航和正文由浏览器直接读取仓库里的 Markdown 原文渲染,内容永远跟仓库这一份事实源同步;这里列出的章节页则是已经渲染好的静态页面,不依赖 JavaScript 也能打开。这里刻意没有任何性能或效率数字:仓库只统计自己的产物(格数、规则数、检查项数、章节数),不声称某条实践能让 agent 更快或更准——因为没有测过,编一个数字会违反它自己的规则。代码 MIT,文档内容 CC BY 4.0。</p>
   </section>
@@ -216,6 +217,7 @@ const GROUPS = [
   { label: '轴二 · 验得动', cls: 'sub', items: [
     { no: '09', title: '可验证的仓库', file: 'practices/09-verifiable-repo.md' },
     { no: '10', title: '硬约束下沉', file: 'practices/10-hard-constraints.md' },
+    { no: '11', title: '验证技能', file: 'practices/11-verification-skills.md' },
   ]},
   { label: 'TOOLS · 工具', items: [
     { no: 'L1', title: 'agentsmd-lint 查文件', file: 'tools/agentsmd-lint/README.md' },
@@ -277,7 +279,7 @@ verify-ready: ok 2 · warn 5 · error 0</code></pre>
 <tr><td><strong>检查已有的 AGENTS.md 写得好不好</strong></td><td>跑 <a href="#/tools/agentsmd-lint/README.md">agentsmd-lint</a>（查文件）和 <a href="#/tools/agents-doctor/README.md">agents-doctor</a>（查整仓基建）</td></tr>
 <tr><td><strong>想让 agent 自己验证、敢自动合 PR</strong></td><td>先看 <a href="#/practices/09-verifiable-repo.md">09 可验证的仓库</a>的阶段顺序，再跑 <a href="#/tools/verify-doctor/README.md">verify-doctor</a>：按阶段报出验证回路的缺口</td></tr>
 <tr><td><strong>换工具，或多工具混用</strong></td><td><a href="#/rosetta/README.md">跨工具对照表</a>：同一概念各家叫什么、放哪、就近规则差在哪</td></tr>
-<tr><td><strong>系统过一遍实践全景</strong></td><td><a href="#/practices/README.md">实践地图</a>十一个章节，每条实践带官方出处</td></tr>
+<tr><td><strong>系统过一遍实践全景</strong></td><td><a href="#/practices/README.md">实践地图</a>十二个章节，每条实践带官方出处</td></tr>
 <tr><td><strong>发现内容过期或有错</strong></td><td><a href="#/CONTRIBUTING.md">贡献指南</a>——带官方链接来提 PR，过期条目删除而非堆积</td></tr>
 </table>
 <p>只有十分钟：读<a href="#/rosetta/README.md">跨工具对照表</a>的「收敛格局」和「就近规则差异」两节，再跑一次上面那两条体检命令。</p>

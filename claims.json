@@ -2,7 +2,7 @@
   "project": "agents-with-receipts",
   "url": "https://alloevil.github.io/agents-with-receipts/",
   "repository": "https://github.com/alloevil/agents-with-receipts",
-  "updated": "2026-09-08",
+  "updated": "2026-09-10",
   "claims": [
     {
       "id": "rosetta-cells-all-sourced",
@@ -46,23 +46,23 @@
     },
     {
       "id": "agents-doctor-check-count",
-      "claim": "agents-doctor runs seven checks over a repository's agent infrastructure.",
-      "value": "7",
+      "claim": "agents-doctor runs eight checks over a repository's agent infrastructure.",
+      "value": "8",
       "metric": "distinct check identifiers implemented in tools/agents-doctor/index.mjs",
-      "method": "The check ids agents-md, claude-md, rules, hooks, skills, secrets and ci-gate appear in both the implementation and the tool's documented check table.",
-      "repro": "node -e \"const s=require('fs').readFileSync('tools/agents-doctor/index.mjs','utf8');console.log(['agents-md','claude-md','rules','hooks','skills','secrets','ci-gate'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
+      "method": "The check ids agents-md, claude-md, rules, hooks, skills, adr, secrets and ci-gate appear in both the implementation and the tool's documented check table.",
+      "repro": "node -e \"const s=require('fs').readFileSync('tools/agents-doctor/index.mjs','utf8');console.log(['agents-md','claude-md','rules','hooks','skills','adr','secrets','ci-gate'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/tools/agents-doctor/README.md",
-      "verified": "2026-09-08"
+      "verified": "2026-09-10"
     },
     {
       "id": "verify-doctor-check-count",
-      "claim": "verify-doctor runs nine checks over a repository's verification loop.",
-      "value": "9",
+      "claim": "verify-doctor runs ten checks over a repository's verification loop.",
+      "value": "10",
       "metric": "distinct check identifiers implemented in tools/verify-doctor/index.mjs",
-      "method": "The check ids verify-command, determinism, failure-artifacts, module-boundary, type-strict, lint-hardness, escape-ratchet, flaky-quarantine and evidence-template appear in both the implementation and the tool's documented check table; every result also carries the stage (0-5) it belongs to.",
-      "repro": "node -e \"const s=require('fs').readFileSync('tools/verify-doctor/index.mjs','utf8');console.log(['verify-command','determinism','failure-artifacts','module-boundary','type-strict','lint-hardness','escape-ratchet','flaky-quarantine','evidence-template'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
+      "method": "The check ids verify-command, determinism, failure-artifacts, ui-evidence, module-boundary, type-strict, lint-hardness, escape-ratchet, flaky-quarantine and evidence-template appear in both the implementation and the tool's documented check table; every result also carries the stage (0-5) it belongs to.",
+      "repro": "node -e \"const s=require('fs').readFileSync('tools/verify-doctor/index.mjs','utf8');console.log(['verify-command','determinism','failure-artifacts','ui-evidence','module-boundary','type-strict','lint-hardness','escape-ratchet','flaky-quarantine','evidence-template'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/tools/verify-doctor/README.md",
-      "verified": "2026-09-08"
+      "verified": "2026-09-10"
     },
     {
       "id": "verify-doctor-stack-coverage",
@@ -86,13 +86,13 @@
     },
     {
       "id": "practice-chapter-count",
-      "claim": "The practices handbook has eleven chapters, excluding its index.",
-      "value": "11",
+      "claim": "The practices handbook has twelve chapters, excluding its index.",
+      "value": "12",
       "metric": "Markdown files under practices/ other than README.md",
-      "method": "Directory listing: 00-agent-ready-walkthrough plus chapters 01 through 10.",
+      "method": "Directory listing: 00-agent-ready-walkthrough plus chapters 01 through 11.",
       "repro": "ls practices/*.md | grep -v README | wc -l",
       "evidence": "https://github.com/alloevil/agents-with-receipts/tree/main/practices",
-      "verified": "2026-09-08"
+      "verified": "2026-09-10"
     }
   ]
 }
