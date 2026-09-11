@@ -10,6 +10,9 @@
 
 **绿灯必须有信息量**：某个检查项在当前仓库**无可检之物**时，一律报 `info` 并写明「不适用：<原因>」，**绝不报 `ok`**。`ok` 只能表示「检查过了，确实干净」。对一个根本没有 JS 的 Rust 仓库报「无 eslint-disable / ts-ignore / any 逃逸口」，是绿灯零信息量——和「warn 等于不存在」是同一种失效模式，只是镜像过来的那一面。
 
+
+**方法论出处**：[04 验证闭环](../../practices/04-verification.md) · [09 可验证的仓库](../../practices/09-verifiable-repo.md) · [10 硬约束下沉](../../practices/10-hard-constraints.md) · [11 验证技能](../../practices/11-verification-skills.md)（评审证据 / 验证回路 / 硬约束下沉 / UI 证据）——每项检查要解决的问题写在那里。
+
 ## 用法
 
 ```bash

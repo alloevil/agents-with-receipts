@@ -49,6 +49,26 @@ Every line that is not `ok` names the file, the missing evidence, and an officia
 
 One rule holds all four together: no entry without a source. This repo dogfoods the whole set in CI.
 
+## Structure map: axis · chapter · check
+
+Numbering is the order chapters were added, not the order to read them — the axis is the grouping, and each chapter's footer continues in axis order. This table is the only alignment you need between the three parts: the question on the left, the machine-checkable id that answers whether you got it right on the right (`id` in `--json` output). The four chapters marked "none" are exactly the ones whose rules stop at the prose layer — see [10](practices/10-hard-constraints.md) — not an oversight.
+
+| Axis | Chapter | What it answers | Machine-checkable id (`--json`) |
+|---|---|---|---|
+| understand | [00 Get a repo agent-ready (follow-along)](practices/00-agent-ready-walkthrough.md) | The whole route from no infrastructure to a lint gate in CI | `agentsmd-lint`'s 5 rules · `agents-doctor`'s `ci-gate` · `agents-init` to generate a starting point |
+| understand | [01 Memory files](practices/01-memory-files.md) | What to write, cut and maintain in AGENTS.md / CLAUDE.md | `agentsmd-lint`'s `max-lines` · `placeholder` · `vague` · `dead-script` · `empty-section`; `agents-doctor`'s `agents-md` · `claude-md` |
+| understand | [02 Mechanism selection](practices/02-mechanism-selection.md) | Whether a fact belongs in memory, a rule, a skill, a hook or a subagent | `agents-doctor`'s `rules` · `hooks` · `skills` |
+| understand | [03 Task framing and planning](practices/03-task-framing.md) | How to write a task an agent can execute and self-check | none — task wording has no mechanical check |
+| understand | [04 Verification loops](practices/04-verification.md) | agent-TDD, independent review, diff reconciliation | `verify-doctor`'s `evidence-template` |
+| understand | [05 Permissions and sandboxing](practices/05-permissions-sandbox.md) | Which autonomy tier, and how to fence network and secrets | none — the vendors enforce these tiers, the repo cannot |
+| understand | [06 Context management](practices/06-context-management.md) | /clear discipline, isolated exploration, plans on disk, budget | none — context discipline leaves no artefact in the repo |
+| understand | [07 Parallelism and orchestration](practices/07-parallel-orchestration.md) | What may run in parallel, file ownership, git worktree | none — orchestration discipline leaves no artefact in the repo |
+| understand | [08 Security and team governance](practices/08-security-governance.md) | Untrusted input, secrets kept out of context, config checked in | `agents-doctor`'s `secrets` |
+| understand | [12 Codebase mental model](practices/12-codebase-mental-model.md) | Asking the runtime, mining history for motivation, demanding trade-offs | `agents-doctor`'s `skills` · `adr` |
+| verify | [09 Verifiable repositories](practices/09-verifiable-repo.md) | One command for everything, determinism, failure evidence, flaky quarantine | `verify-doctor`'s `verify-command` · `determinism` · `failure-artifacts` · `flaky-quarantine` |
+| verify | [10 Pushing rules into hard constraints](practices/10-hard-constraints.md) | Moving rules from prose into structure, types and mechanical gates | `verify-doctor`'s `module-boundary` · `type-strict` · `lint-hardness` · `escape-ratchet` |
+| verify | [11 Verification skills](practices/11-verification-skills.md) | Failure traces and screenshots, driving the real app, visual evidence in PRs | `verify-doctor`'s `ui-evidence` |
+
 ## Install
 
 Node ≥ 20, no dependencies to install — the four CLIs are single-file Node ESM scripts using only the standard library, so the clone above is the entire installation.

@@ -154,7 +154,11 @@
 
 **反模式**：把「上次讨论的结论」当成团队共识——它只在你那台机器上存在。
 
-## 本章对应的检查
+---
 
-- `agents-doctor` 的 `skills` 检查数出仓库里有几个 skill（`.claude/skills/`、`.agents/skills/`、`.github/skills/`），确认 12.4 的产物真的被识别。
-- 12.1 的产出落盘由 [06 上下文管理](06-context-management.md) 的 6.3 承接；想知道「探索完到底该看什么证据」，接 [04 验证闭环](04-verification.md)。
+**位置**：轴一 · 读得懂 — 上一章 [08 安全与治理](08-security-governance.md) · 下一章 [09 可验证的仓库](09-verifiable-repo.md)（轴二 · 验得动）
+
+**相关**：[03 任务框架与规划](03-task-framing.md) · [06 上下文管理](06-context-management.md)
+
+**对应检查**：`agents-doctor` 的 `skills` · `adr`
+

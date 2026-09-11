@@ -121,3 +121,12 @@ Copilot 用 `.github/instructions/*.instructions.md` 的 `applyTo:`（[语法](h
 **依据**：[Claude subagents](https://code.claude.com/docs/en/sub-agents)（独立上下文窗口语义）。
 
 **边界**：subagent 看不到主对话历史——任务描述必须自含。描述不清就并行，返工比串行更贵；独立性判定见 [07 并行与编排](07-parallel-orchestration.md)。
+
+---
+
+**位置**：轴一 · 读得懂 — 上一章 [01 Memory 文件](01-memory-files.md) · 下一章 [03 任务框架与规划](03-task-framing.md)
+
+**相关**：[01 Memory 文件](01-memory-files.md) · [05 权限与沙箱](05-permissions-sandbox.md)
+
+**对应检查**：`agents-doctor` 的 `rules` · `hooks` · `skills`
+

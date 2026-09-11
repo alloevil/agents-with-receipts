@@ -6,6 +6,9 @@
 agents-init 只写探测到的真实命令和真实存在的生成物目录，产出保证过
 [agentsmd-lint](../agentsmd-lint/) 零命中——写完当场自跑一遍验证。
 
+
+**方法论出处**：[00 从零配齐（可跟做）](../../practices/00-agent-ready-walkthrough.md) · [01 Memory 文件](../../practices/01-memory-files.md)（起步动线 / memory 该写什么）——每项检查要解决的问题写在那里。
+
 ## 用法
 
 ```bash

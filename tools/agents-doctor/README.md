@@ -4,6 +4,9 @@
 
 一条命令回答「这个仓库对 AI agent 友好吗」——memory 文件、软链、hooks、决策记录、敏感文件、CI 门禁，8 项一次查完。路径清单与 rosetta/README.md 的跨工具对照一致。
 
+
+**方法论出处**：[00 从零配齐（可跟做）](../../practices/00-agent-ready-walkthrough.md) · [01 Memory 文件](../../practices/01-memory-files.md) · [02 机制选型](../../practices/02-mechanism-selection.md) · [08 安全与治理](../../practices/08-security-governance.md) · [12 理解陌生代码库](../../practices/12-codebase-mental-model.md)（基建动线 / memory 与软链 / 机制选型 / secrets / skills 与 ADR）——每项检查要解决的问题写在那里。
+
 ## 用法
 
 ```bash

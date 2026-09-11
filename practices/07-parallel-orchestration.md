@@ -161,3 +161,12 @@ done
 **边界**：需要跨文件判断力的任务（架构调整、边界模糊的重构）不属于批量派发。`--sandbox danger-full-access` 只用在隔离的 CI runner 或容器里，Codex 官方对此有同样限定。
 
 **反模式**：跳过小样本直接对 2000 个文件放量——prompt 的第一个缺陷会被原样复制 2000 遍。
+
+---
+
+**位置**：轴一 · 读得懂 — 上一章 [06 上下文管理](06-context-management.md) · 下一章 [08 安全与治理](08-security-governance.md)
+
+**相关**：[06 上下文管理](06-context-management.md) · [10 硬约束下沉](10-hard-constraints.md)
+
+**对应检查**：无 —— 编排纪律没有仓库内证据（规矩停在提示层，见 [10 硬约束下沉](10-hard-constraints.md)）
+

@@ -4,6 +4,9 @@ AGENTS.md / CLAUDE.md 质量检查器。零依赖，Node ≥ 20。
 
 「Treat your agent memory file like code」说了两年，一直没有工具支撑——这就是那个工具。
 
+
+**方法论出处**：[00 从零配齐（可跟做）](../../practices/00-agent-ready-walkthrough.md) · [01 Memory 文件](../../practices/01-memory-files.md) · [02 机制选型](../../practices/02-mechanism-selection.md)（写什么 / 为什么这段该放 memory / 把 lint 接进 CI）——每项检查要解决的问题写在那里。
+
 ## 用法
 
 ```bash

@@ -143,3 +143,12 @@ paths:
 **边界**：`@` import 是 Claude Code 专属语法，Codex / Cursor / Copilot 不解析；跨工具通用的按需引用写法是正文一句"改 X 前先读 docs/Y.md"。
 
 **反模式**：把风格指南整本粘进 memory 文件——Cursor 官方点名这是错法："Use a linter instead. Agent already knows common style conventions."
+
+---
+
+**位置**：轴一 · 读得懂 — 上一章 [05 权限与沙箱](05-permissions-sandbox.md) · 下一章 [07 并行与编排](07-parallel-orchestration.md)
+
+**相关**：[02 机制选型](02-mechanism-selection.md) · [03 任务框架与规划](03-task-framing.md)
+
+**对应检查**：无 —— 上下文纪律没有仓库内证据（规矩停在提示层，见 [10 硬约束下沉](10-hard-constraints.md)）
+

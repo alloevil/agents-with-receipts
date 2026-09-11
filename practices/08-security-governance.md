@@ -195,3 +195,12 @@ agent 能读网页、读文件、跑命令，这三个能力各自对应一类�
 **边界**：`--dangerously-bypass-hook-trust` 只用于在 Codex 之外已完成 hook 来源审计的一次性自动化（官方原文限定），交互式日常使用不碰它。
 
 **反模式**：在提交进仓库的 settings 里写 `enableAllProjectMcpServers: true`，指望新 clone 直接生效——官方在未信任目录忽略这个设置，这么写只留下一个假的安全阀。
+
+---
+
+**位置**：轴一 · 读得懂 — 上一章 [07 并行与编排](07-parallel-orchestration.md) · 下一章 [12 理解陌生代码库](12-codebase-mental-model.md)
+
+**相关**：[05 权限与沙箱](05-permissions-sandbox.md) · [02 机制选型](02-mechanism-selection.md)
+
+**对应检查**：`agents-doctor` 的 `secrets`
+

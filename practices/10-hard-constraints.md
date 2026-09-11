@@ -221,3 +221,12 @@ layers =
 **边界**：分支保护默认**不**约束 admin 与有 bypass 权限的角色——要真正封死得显式打开 "Do not allow bypassing the above settings"。另外 CI / 无人值守场景里没有人回答任何提示，门只能是退出码，不能是交互确认。
 
 **反模式**：只装 pre-commit，不进 required check。这等于把门禁委托给每个人的本地环境和心情，也让 agent 得到一个「不跑就是绿」的合法姿势。
+
+---
+
+**位置**：轴二 · 验得动 — 上一章 [09 可验证的仓库](09-verifiable-repo.md) · 下一章 [11 验证技能](11-verification-skills.md)
+
+**相关**：[09 可验证的仓库](09-verifiable-repo.md) · [11 验证技能](11-verification-skills.md)
+
+**对应检查**：`verify-doctor` 的 `module-boundary` · `type-strict` · `lint-hardness` · `escape-ratchet`
+

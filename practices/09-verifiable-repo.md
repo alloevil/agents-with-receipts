@@ -227,3 +227,12 @@
 **边界**：证据是 review 的输入，不是替代。缺了上面四条中的任何一条，"只看证据"等于看 agent 自己拍的照片——它选了拍什么，也选了不拍什么。安全相关改动、数据迁移、权限边界一律逐行读，无论证据多漂亮（见 08 章）。
 
 **反模式**：先上自动合入，再说"回头把 flaky 清一清"。顺序反了：验证不可信时，自动化只是把错误合并得更快。
+
+---
+
+**位置**：轴二 · 验得动 — 上一章 [12 理解陌生代码库](12-codebase-mental-model.md)（轴一 · 读得懂） · 下一章 [10 硬约束下沉](10-hard-constraints.md)
+
+**相关**：[04 验证闭环](04-verification.md) · [10 硬约束下沉](10-hard-constraints.md)
+
+**对应检查**：`verify-doctor` 的 `verify-command` · `determinism` · `failure-artifacts` · `flaky-quarantine`
+

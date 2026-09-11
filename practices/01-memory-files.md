@@ -198,3 +198,12 @@ memory 文件是 agent 每次会话都要付费加载的常驻上下文：写少
 **边界**：linter 只查得出形式问题（占位符、死命令、空节），查不出"这条规则本身还对不对"——内容层面的修剪仍靠 1.4 的行为观察。
 
 **反模式**：warning 长期挂着不修——门禁只对 error 生效时，warning 堆积等于没有门禁。
+
+---
+
+**位置**：轴一 · 读得懂 — 上一章 [00 从零配齐（可跟做）](00-agent-ready-walkthrough.md) · 下一章 [02 机制选型](02-mechanism-selection.md)
+
+**相关**：[02 机制选型](02-mechanism-selection.md) · [06 上下文管理](06-context-management.md)
+
+**对应检查**：`agentsmd-lint` 的 `max-lines` · `placeholder` · `vague` · `dead-script` · `empty-section` · `agents-doctor` 的 `agents-md` · `claude-md`
+

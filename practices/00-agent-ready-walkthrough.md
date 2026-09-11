@@ -233,3 +233,12 @@ git push -u origin test-lint
 | agentsmd-lint CI | 注入占位符 push 变红；删除后变绿 | ☐ |
 
 之后的维护节奏：agent 犯一次错，往 AGENTS.md 或规则里补一条；从没被用到的条目删掉；CI 挡住腐烂。
+
+---
+
+**位置**：轴一 · 读得懂 — 上一章 —（本章是起点，先跟做） · 下一章 [01 Memory 文件](01-memory-files.md)
+
+**相关**：[01 Memory 文件](01-memory-files.md) · [02 机制选型](02-mechanism-selection.md)
+
+**对应检查**：`agentsmd-lint` 的 5 条规则 · `agents-doctor` 的 `ci-gate` · `agents-init` 生成起点
+

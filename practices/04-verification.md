@@ -184,3 +184,12 @@ Agent 在"看起来完成"时就会停手；没有一个它能自己运行的检
 **边界**：全量套件跑一次要几分钟的仓库，只把过滤后的单测命令写成默认动作，全量命令标注"合并前跑一次"；AGENTS.md 里的指令是建议性的，agent 可能跳过——必须无一例外执行的检查用 hook 兜底（见 4.3）。
 
 **反模式**：写"跑测试"三个字不带命令——agent 猜一个错误的 runner，把轮次耗在修环境上。
+
+---
+
+**位置**：轴一 · 读得懂 — 上一章 [03 任务框架与规划](03-task-framing.md) · 下一章 [05 权限与沙箱](05-permissions-sandbox.md)
+
+**相关**：[09 可验证的仓库](09-verifiable-repo.md) · [11 验证技能](11-verification-skills.md)
+
+**对应检查**：`verify-doctor` 的 `evidence-template`
+

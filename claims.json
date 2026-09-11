@@ -93,6 +93,16 @@
       "repro": "ls practices/*.md | grep -v README | wc -l",
       "evidence": "https://github.com/alloevil/agents-with-receipts/tree/main/practices",
       "verified": "2026-09-11"
+    },
+    {
+      "id": "chapter-tool-map",
+      "claim": "Every practices chapter states where it sits in the axis order and which tool checks its method feeds, and every check id those footers name exists in the corresponding implementation.",
+      "value": "13/13",
+      "metric": "chapters under practices/ carrying the three-line footer (位置 / 相关 / 对应检查), plus the check ids named there that occur in tools/*/index.mjs",
+      "method": "Each chapter 00–12 ends with a footer whose 「对应检查」 line names tool check ids or says 无. The script below counts the footers, counts the structure-map rows in practices/README.md, collects the check ids named in the footers (excluding the four tool names), and checks that each id appears as a quoted string in one of the four tool implementations.",
+      "repro": "python3 -c 'import re,pathlib;R=pathlib.Path(\".\");T={\"agentsmd-lint\",\"agents-doctor\",\"agents-init\",\"verify-doctor\"};F=[p for p in sorted((R/\"practices\").glob(\"*.md\")) if re.match(r\"\\d\\d-\",p.name)];M=[re.search(r\"\\*\\*对应检查\\*\\*：(.+)\",p.read_text()) for p in F];pat=chr(96)+\"([a-z][a-z-]{2,})\"+chr(96);ids=set();[ids.update(set(re.findall(pat,m.group(1)))-T) for m in M if m];src=\" \".join((R/(\"tools/\"+n+\"/index.mjs\")).read_text() for n in T);rows=len([l for l in (R/\"practices/README.md\").read_text().splitlines() if l.startswith((\"| 读得懂 |\",\"| 验得动 |\"))]);print(sum(1 for m in M if m),\"of\",len(F),\"chapters have the footer;\",rows,\"map rows;\",len(ids),\"check ids;\",sum(1 for i in ids if chr(39)+i+chr(39) not in src),\"ids absent from the implementations\")'",
+      "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/practices/README.md",
+      "verified": "2026-09-11"
     }
   ]
 }
