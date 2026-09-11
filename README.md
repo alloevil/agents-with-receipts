@@ -216,6 +216,10 @@ Code is MIT; documentation content is additionally available under CC BY 4.0, so
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). The one-sentence version: **new entries must carry an official source**, and PRs correcting outdated information should include the official link.
 
+<p align="center">
+  <a href="https://github.com/oil-oil/beautify-github-readme"><img src="./assets/readme/made-with-beautify.svg" width="300" alt="README made with beautify-github-readme"></a>
+</p>
+
 ## License
 
 [MIT](LICENSE). Documentation content is additionally available under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
