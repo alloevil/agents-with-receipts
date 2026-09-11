@@ -98,6 +98,10 @@
 
 3. CI 无论成败都上传证据，否则 agent 只能看日志尾巴猜：
 
+   <!-- {% raw %} -->
+   <!-- 这一段必须夹在 raw 里：Jekyll 用 Liquid 渲染页面，会把 GitHub Actions 表达式
+        ${{ ... }} 当 Liquid 变量解析并静默丢掉，线上就只剩一个孤零零的 $。
+        用 HTML 注释包住 raw 标签，GitHub 上不可见，Jekyll 上生效（见 CONTRIBUTING.md）。 -->
    ```yaml
    - uses: actions/upload-artifact@v4
      if: ${{ !cancelled() }}
@@ -105,10 +109,13 @@
        name: evidence
        path: .artifacts/
    ```
+   <!-- {% endraw %} -->
 
 4. 在 AGENTS.md 里写明 artifact 落在哪、怎么读，agent 才会去看 trace 而不是重跑一遍复现。
 
-**依据**：Vitest 的 `json` reporter 配 `outputFile` 是官方指定的程序化消费方式（[Reporters](https://vitest.dev/guide/reporters)）；Playwright 官方推荐 CI 上设 `trace: 'on-first-retry'`，为重试的失败测试留下可逐动作回放的 `trace.zip`（[Trace viewer](https://playwright.dev/docs/trace-viewer)）；上传用 `actions/upload-artifact`（[README](https://github.com/actions/upload-artifact)），GitHub 官方文档说明 `always()` 连 job 被取消时也会执行、可能把流水线挂到超时，推荐用 `if: ${{ !cancelled() }}` 表达"无论成败都跑"（[Evaluate expressions](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions)）；产物的下载入口见 [Downloading workflow artifacts](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)。
+<!-- {% raw %} -->
+**依据**：Vitest 的 `json` reporter 配 `outputFile` 是官方指定的程序化消费方式（[Reporters](https://vitest.dev/guide/reporters)）；Playwright 官方推荐 CI 上设 `trace: 'on-first-retry'`，为重试的失败测试留下可逐动作回放的 `trace.zip`（[Trace viewer](https://playwright.dev/docs/trace-viewer)）；上传用 `actions/upload-artifact`（[README](https://github.com/actions/upload-artifact)），GitHub 官方文档说明 `always()` 连 job 被取消时也会执行、可能把流水线挂到超时，推荐用 `if: ${{ !cancelled() }}` 表达「无论成败都跑」（[Evaluate expressions](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions)）；产物的下载入口见 [Downloading workflow artifacts](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)。
+<!-- {% endraw %} -->
 
 **边界**：artifact 有保留期与体积成本（GitHub 默认存 90 天、可按仓库改），trace 常开会显著拖慢 e2e——官方明确 `trace: 'on'` 不推荐。只给失败和首次重试留证据。
 
