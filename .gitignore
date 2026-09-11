@@ -1,2 +1,6 @@
 node_modules/
 .DS_Store
+
+# Jekyll：只在本机预览静态页时需要（jekyll build），产物不入库
+_site/
+.jekyll-cache/

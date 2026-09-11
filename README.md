@@ -43,7 +43,7 @@ Every line that is not `ok` names the file, the missing evidence, and an officia
 | Part | What it is | Which axis | Size |
 |---|---|---|---|
 | [`rosetta/`](rosetta/) | Cross-tool comparison table: what Claude Code, Codex, Cursor and Copilot each call the same concept, where the file lives, and how proximity rules differ | understand | 10 concepts × 4 tools = 40 cells, every cell an official doc link, verified 2026-08 |
-| [`practices/`](practices/) | Handbook chapters. Every practice reads scenario → approach → evidence → boundaries, with copy-paste examples | 00–08 understand, 09–11 verify | 12 chapters, of which 00 is a follow-along walkthrough |
+| [`practices/`](practices/) | Handbook chapters. Every practice reads scenario → approach → evidence → boundaries, with copy-paste examples | 00–08 + 12 understand, 09–11 verify | 13 chapters, of which 00 is a follow-along walkthrough |
 | [`tools/`](tools/) | CLIs that turn those chapters into checks you can run, on one file or a whole repo | both | 4 CLIs · 5 lint rules · 8 doctor checks · 10 verify-doctor checks |
 | [`templates/`](templates/) | `AGENTS.md` / `RULES.md` skeletons distilled from real projects, usage notes in the comments | understand | 2 skeletons, both built to pass the linter |
 
@@ -65,8 +65,9 @@ They are also declared as `bin` entries, so `npm link` gives you `agentsmd-lint`
 | **Checking whether an existing AGENTS.md is any good** | Run [`agentsmd-lint`](tools/agentsmd-lint/) (checks the file) and [`agents-doctor`](tools/agents-doctor/) (checks the whole repo's infrastructure) |
 | **Wanting the agent to verify its own work — or to trust it enough to auto-merge** | [`09 Verifiable repositories`](practices/09-verifiable-repo.md) for the stage order, then run [`verify-doctor`](tools/verify-doctor/): it reports the verification-loop gap stage by stage |
 | **Shipping UI changes and needing receipts an agent can produce** | [`11 Verification skills`](practices/11-verification-skills.md): failure screenshots/traces, driving the real app, visual evidence in the PR flow — checked mechanically by `verify-doctor`'s `ui-evidence` |
+| **Taking over unfamiliar code, or needing to know why it looks the way it does** | [`12 Codebase mental model`](practices/12-codebase-mental-model.md): `/how` asks the runtime, `/why` digs the git history, `/teach` demands trade-offs — shipped as a commit-able skill |
 | **Switching tools, or mixing Claude Code / Codex / Cursor** | The [`rosetta/`](rosetta/) comparison table: what each vendor calls the same concept, where it lives, and how proximity rules differ |
-| **Systematically surveying the full landscape of agentic coding practices** | [`practices/`](practices/): twelve chapters, every practice structured as "scenario → approach → evidence → boundaries" with official sources |
+| **Systematically surveying the full landscape of agentic coding practices** | [`practices/`](practices/): thirteen chapters, every practice structured as "scenario → approach → evidence → boundaries" with official sources |
 | **Found outdated or incorrect content** | [CONTRIBUTING.md](CONTRIBUTING.md) — open a PR with an official link; stale entries get deleted, not accumulated |
 
 If you only have ten minutes: read the "convergence landscape" and "proximity-rule differences" sections in [`rosetta/`](rosetta/), then run the linter once against your own repo.
@@ -85,13 +86,13 @@ One immediately usable takeaway: **make a root-level `AGENTS.md` the single sour
 ln -s AGENTS.md CLAUDE.md
 ```
 
-## practices — twelve chapters, every claim sourced
+## practices — thirteen chapters, every claim sourced
 
 <p align="center">
   <img src="./assets/readme/section-practices.svg" width="100%" alt="Board two, practices: a practices map with ten major categories plus templates, every claim carrying an official source and verification date.">
 </p>
 
-[`practices/`](practices/) is a twelve-chapter practices handbook: [00, a follow-along walkthrough](practices/00-agent-ready-walkthrough.md) (setting up full agent infrastructure from scratch) + chapters 01–11 (memory files / mechanism selection / task framing / verification loops / permissions & sandboxing / context management / parallel orchestration / safety & governance / verifiable repositories / pushing rules down into hard constraints / verification skills: screenshots, video and traces as evidence). Every practice unfolds as "**scenario → approach (copy-paste examples) → evidence (official links) → boundaries**" — not a bullet-point index, but workflows you can actually follow to completion.
+[`practices/`](practices/) is a thirteen-chapter practices handbook: [00, a follow-along walkthrough](practices/00-agent-ready-walkthrough.md) (setting up full agent infrastructure from scratch) + chapters 01–11 (memory files / mechanism selection / task framing / verification loops / permissions & sandboxing / context management / parallel orchestration / safety & governance / verifiable repositories / pushing rules down into hard constraints / verification skills: screenshots, video and traces as evidence) + [12, codebase mental model](practices/12-codebase-mental-model.md) (runtime and history questions — `/how`, `/why`, `/teach`, `/recall` — shipped as a skill you can commit). Every practice unfolds as "**scenario → approach (copy-paste examples) → evidence (official links) → boundaries**" — not a bullet-point index, but workflows you can actually follow to completion.
 
 Accompanied by [`templates/`](templates/): `AGENTS.md` / `RULES.md` skeletons distilled from real projects, with usage notes in the comments, designed to be used together with the linter below.
 
@@ -166,7 +167,7 @@ Every number quoted here is recomputable: [`claims.json`](https://alloevil.githu
 
 ## When NOT to use it
 
-- **You want productivity or performance numbers.** There are none, by design. [`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) only counts this repo's own artefacts (40 sourced cells, 12 chapters, 4 tools, 5 lint rules, 8 doctor checks, 10 verify-doctor checks, 5 stacks those checks recognise, 4/4 CLIs with `--json`, 0 dependencies). No claim is made that any practice makes an agent faster or more accurate, because that has not been measured.
+- **You want productivity or performance numbers.** There are none, by design. [`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) only counts this repo's own artefacts (40 sourced cells, 13 chapters, 4 tools, 5 lint rules, 8 doctor checks, 10 verify-doctor checks, 5 stacks those checks recognise, 4/4 CLIs with `--json`, 0 dependencies). No claim is made that any practice makes an agent faster or more accurate, because that has not been measured.
 - **You need vendor facts guaranteed current.** The comparison table is dated **2026-08**. This field moves in months — that is why every cell is a link: re-verify the one cell your decision rests on before betting on it.
 - **You want the tools to fix your files.** All are read-only reporters except `agents-init`, which writes a new AGENTS.md and refuses to overwrite an existing one without `--force`.
 - **You want `verify-doctor` to close the gaps it finds.** It is a detector, not a fixer: it names the stage and the missing evidence, and never edits your tests, config or CI. It also ships no dependency-cruiser or betterer of its own — zero dependencies is a rule here — it only detects whether you have already adopted such a tool.

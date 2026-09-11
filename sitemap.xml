@@ -5,13 +5,28 @@
        "symlink CLAUDE.md to AGENTS.md" advice, so listing both would advertise
        duplicate content. It is legitimate public content and is deliberately NOT
        disallowed anywhere.
-       Every markdown page here also resolves at BOTH extensions: Jekyll renders a
-       themed .html (self-referential rel=canonical, verified live) and also serves
-       the raw .md as text/markdown. The .html is listed as canonical; the .md is
-       deliberately left crawlable as an LLM-readable surface and must not be
-       Disallowed, and must not be added here as a duplicate entry. -->
+       Markdown pages resolve at BOTH extensions: Jekyll renders a themed .html
+       (self-referential rel=canonical, verified live) and also serves the raw .md
+       as text/markdown. The .html is listed as canonical; the .md is deliberately
+       left crawlable as an LLM-readable surface and must not be Disallowed, and
+       must not be added here as a duplicate entry.
+       Two consequences of that Jekyll behaviour, both checked against the live
+       site before this list was written:
+       - README.md has NO .html sibling. GitHub Pages maps a directory's README.md
+         onto that directory's index.html (jekyll-readme-index), so README.md never
+         produces README.html — every directory README.md here behaves that way
+         (verified: practices/README.html and rosetta/README.html are 404, while
+         practices/index.html and rosetta/index.html are 200). At the repository
+         root the hand-written index.html wins that slot, so the English README
+         would have had no HTML surface at all; english.html is that surface, and
+         it renders README.md through {% include_relative %} so the two cannot
+         drift.
+       - The raw README.md stays reachable as text/markdown and is the canonical
+         machine-readable entry point for the repository root. -->
+
   <url><loc>https://alloevil.github.io/agents-with-receipts/</loc></url>
   <url><loc>https://alloevil.github.io/agents-with-receipts/README.zh-CN.html</loc></url>
+  <url><loc>https://alloevil.github.io/agents-with-receipts/english.html</loc></url>
   <url><loc>https://alloevil.github.io/agents-with-receipts/AGENTS.html</loc></url>
   <url><loc>https://alloevil.github.io/agents-with-receipts/practices/00-agent-ready-walkthrough.html</loc></url>
   <url><loc>https://alloevil.github.io/agents-with-receipts/practices/01-memory-files.html</loc></url>
@@ -25,6 +40,7 @@
   <url><loc>https://alloevil.github.io/agents-with-receipts/practices/09-verifiable-repo.html</loc></url>
   <url><loc>https://alloevil.github.io/agents-with-receipts/practices/10-hard-constraints.html</loc></url>
   <url><loc>https://alloevil.github.io/agents-with-receipts/practices/11-verification-skills.html</loc></url>
+  <url><loc>https://alloevil.github.io/agents-with-receipts/practices/12-codebase-mental-model.html</loc></url>
   <url><loc>https://alloevil.github.io/agents-with-receipts/tools/verify-doctor/</loc></url>
   <url><loc>https://alloevil.github.io/agents-with-receipts/tools/agentsmd-lint/</loc></url>
   <url><loc>https://alloevil.github.io/agents-with-receipts/tools/agents-doctor/</loc></url>

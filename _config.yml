@@ -1,0 +1,24 @@
+# GitHub Pages 会为每个 .md 渲染一个静态页（practices/*.html、rosetta/index.html…）。
+# 这个文件给那些页面一份外壳，让它们长得和根目录 index.html 一样：配色、票根导航、
+# 小票纸张全部复用 assets/css/receipt.css，不再落到 GitHub 默认主题上。
+#
+# url 与 baseurl 必须和线上一致：canonical、og:url 和站内绝对链接都由这两个值拼出来。
+url: https://alloevil.github.io
+baseurl: /agents-with-receipts
+
+title: agents-with-receipts
+description: "有据可查的 agentic coding 实践手册：逐格核实的跨工具对照表、有出处的实践地图、AGENTS.md 质量检查器。Evidence-first agentic coding: a cell-by-cell verified cross-tool table, a sourced practices map, and an AGENTS.md linter."
+repository: https://github.com/alloevil/agents-with-receipts
+lang: zh-CN
+# 社交卡片图：1200×630 PNG，由 assets/readme/hero.svg 重排而来（SVG 不被 X / Slack / Facebook 接受）
+image: /assets/readme/og.png
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+  - scope:
+      path: "README.md"
+    values:
+      lang: en

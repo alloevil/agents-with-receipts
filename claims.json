@@ -2,7 +2,7 @@
   "project": "agents-with-receipts",
   "url": "https://alloevil.github.io/agents-with-receipts/",
   "repository": "https://github.com/alloevil/agents-with-receipts",
-  "updated": "2026-09-10",
+  "updated": "2026-09-11",
   "claims": [
     {
       "id": "rosetta-cells-all-sourced",
@@ -86,13 +86,13 @@
     },
     {
       "id": "practice-chapter-count",
-      "claim": "The practices handbook has twelve chapters, excluding its index.",
-      "value": "12",
+      "claim": "The practices handbook has thirteen chapters, excluding its index.",
+      "value": "13",
       "metric": "Markdown files under practices/ other than README.md",
-      "method": "Directory listing: 00-agent-ready-walkthrough plus chapters 01 through 11.",
+      "method": "Directory listing: 00-agent-ready-walkthrough plus chapters 01 through 12. The 12th chapter was added 2026-09-11 together with the skills it ships.",
       "repro": "ls practices/*.md | grep -v README | wc -l",
       "evidence": "https://github.com/alloevil/agents-with-receipts/tree/main/practices",
-      "verified": "2026-09-10"
+      "verified": "2026-09-11"
     }
   ]
 }

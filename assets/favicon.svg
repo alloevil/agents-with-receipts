@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Agents with Receipts：一张盖了章的小票">
+  <rect width="32" height="32" rx="7" fill="#171512"/>
+  <path d="M8 5h16v16.4l-2.667 1.8L18.667 25l-2.667-1.8L13.333 25 10.667 23.2 8 25z" fill="#F6F1E7"/>
+  <path d="M11 10.5h10M11 14h10M11 17.5h6" stroke="#8A8378" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="21.5" cy="20.5" r="5" fill="#C0392B"/>
+  <path d="M19.3 20.4l1.6 1.7 2.9-3.4" fill="none" stroke="#F6F1E7" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

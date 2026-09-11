@@ -12,6 +12,7 @@
 | 仓库体检 | `node tools/agents-doctor/index.mjs .` |
 | 验证回路体检 | `node tools/verify-doctor/index.mjs .` |
 | 本地预览站点 | `python3 -m http.server 8877`（index.html 直接 fetch 仓库 Markdown 渲染，零构建） |
+| 本地预览静态页 | `jekyll build --config _config.yml --destination /tmp/site --baseurl ""` 后开 `/tmp/site`（Jekyll 只在 GitHub 端跑；本机要装 jekyll，坑见 [CONTRIBUTING](CONTRIBUTING.md) 的「站点渲染」） |
 
 ## 边界
 

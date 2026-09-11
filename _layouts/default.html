@@ -1,0 +1,90 @@
+{%- comment -%}
+  .md 渲染成的静态页外壳。这是搜索引擎与分享卡片真正抓到的那个面，所以头部写全：
+  canonical、og:image（1200×630 PNG，SVG 不被社交平台接受）、favicon 都在这里。
+  导航来自 _data/nav.yml，样式来自 assets/css/receipt.css——和根目录 SPA 同一套配色。
+
+  page.url 对目录索引（tools/x/README.md）是 /tools/x/，对普通章节是 /practices/x.html，
+  两种情况 nav.yml 里都写成同一个值，模板才能用相等比较点亮当前项。
+{%- endcomment -%}
+{%- assign lang = page.lang | default: site.lang -%}
+{%- comment -%}
+  票根号从文件名推出来（04-verification.md → 04），不给每个 .md 加 front matter：
+  GitHub 会把 YAML front matter 当表格渲染在页面顶部，为了一个装饰性的编号污染
+  仓库里每一篇正文不值得。非章节页（README、AGENTS…）落回「—」。
+{%- endcomment -%}
+{%- assign receipt = page.receipt -%}
+{%- unless receipt -%}
+  {%- assign stem = page.name | split: "." | first -%}
+  {%- assign receipt = stem | split: "-" | first -%}
+  {%- if receipt.size != 2 -%}{%- assign receipt = "—" -%}{%- endif -%}
+{%- endunless -%}
+{%- assign path = page.url -%}
+{%- assign ogdesc = page.description | default: site.description -%}
+{%- assign ogimage = site.url | append: site.baseurl | append: site.image -%}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ page.title | default: site.title }} · {{ site.title }}</title>
+<meta name="description" content="{{ ogdesc | strip_newlines }}">
+<link rel="canonical" href="{{ site.url }}{{ site.baseurl }}{{ path }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ site.url }}{{ site.baseurl }}{{ path }}">
+<meta property="og:title" content="{{ page.title | default: site.title }}">
+<meta property="og:description" content="{{ ogdesc | strip_newlines }}">
+<meta property="og:site_name" content="{{ site.title }}">
+<meta property="og:locale" content="{% if lang == 'en' %}en_US{% else %}zh_CN{% endif %}">
+<meta property="og:image" content="{{ ogimage }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Agents with Receipts · 有据可查 —— 四个板块全部带来源的 agentic coding 实践手册">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ page.title | default: site.title }}">
+<meta name="twitter:description" content="{{ ogdesc | strip_newlines }}">
+<meta name="twitter:image" content="{{ ogimage }}">
+<meta name="theme-color" content="#171512">
+<link rel="icon" href="{{ site.baseurl }}/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="{{ site.baseurl }}/assets/css/receipt.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","headline":{{ page.title | default: site.title | jsonify }},"description":{{ ogdesc | strip_newlines | jsonify }},"url":"{{ site.url }}{{ site.baseurl }}{{ path }}","inLanguage":"{{ lang }}","isPartOf":{"@type":"WebSite","name":{{ site.title | jsonify }},"url":"{{ site.url }}{{ site.baseurl }}/"}}
+</script>
+</head>
+<body>
+<div class="frame">
+  <div class="hero">
+    <a href="{{ site.baseurl }}/"><img src="{{ site.baseurl }}/assets/readme/hero.svg" width="1200" height="360" alt="Agents with Receipts · 有据可查：agentic coding 实践手册"></a>
+  </div>
+
+  <div class="layout">
+    <nav class="stubs" aria-label="站内导航">
+      {%- for group in site.data.nav.groups %}
+      <div class="stub-group{% if group.cls %} {{ group.cls }}{% endif %}">
+        <p class="label">{{ group.label }}</p>
+        {%- for item in group.items %}
+        {%- if item.external %}
+        {%- assign href = site.repository | append: "/blob/main" | append: item.url %}
+        {%- else %}
+        {%- assign href = site.baseurl | append: item.url %}
+        {%- endif %}
+        <a class="stub{% if item.url == path %} active{% endif %}" href="{{ href }}"{% if item.external %} target="_blank" rel="noopener"{% endif %}><span class="no">{{ item.id }}</span><span>{{ item.title }}</span></a>
+        {%- endfor %}
+      </div>
+      {%- endfor %}
+    </nav>
+
+    <main class="paper">
+      <div class="meta-row">
+        <span>RECEIPT #{{ receipt }} · {{ path }}</span>
+        <span><a href="{{ site.repository }}/blob/main/{{ page.path }}" target="_blank" rel="noopener">在 GitHub 查看源文件</a></span>
+      </div>
+      {{ content }}
+      <footer>
+        <span class="stamp-inline">EVIDENCE ATTACHED · 有据可查</span><br><br>
+        MIT · 文档 CC BY 4.0 · <a href="{{ site.repository }}" target="_blank" rel="noopener">GitHub 仓库</a> · <a href="{{ site.baseurl }}/">交互式首页</a> · <a href="https://alloevil.github.io/projects/">More projects by allo</a>
+      </footer>
+    </main>
+  </div>
+</div>
+</body>
+</html>

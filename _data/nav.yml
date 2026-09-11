@@ -1,0 +1,54 @@
+# 静态页侧边导航的唯一来源，由 _layouts/default.html 渲染。
+#
+# 根目录的 index.html 是零构建 SPA，不经过 Jekyll，读不到这个文件，因此它自带一份
+# 内容相同的 GROUPS 常量。两处并存是刻意的取舍：一个静态站没有构建步骤，就没有
+# 第三方能给两个渲染面共享一份清单。漂移由 claims.json 的 practice-chapter-count
+# 和 sitemap.xml 钉住——加一章要同时改三处，漏一处处处看得见。
+#
+# 字段名用 id 而不是 no：YAML 1.1 把裸 no 解析成布尔 false，`item.no` 在 Liquid 里永远取不到值。
+# url 是站内路径（不含 baseurl，模板会拼）；指向仓库文件而非页面时用 external。
+
+groups:
+  - label: START
+    items:
+      - { id: "00", title: 这是什么, url: / }
+  - label: ROSETTA · 对照
+    items:
+      - { id: R, title: 跨工具对照表, url: /rosetta/ }
+  - label: PRACTICES · 实践
+    cls: lead
+    items:
+      - { id: IDX, title: 章节索引, url: /practices/ }
+  - label: 轴一 · 读得懂
+    cls: sub
+    items:
+      - { id: "00", title: 从零配齐（可跟做）, url: /practices/00-agent-ready-walkthrough.html }
+      - { id: "01", title: Memory 文件, url: /practices/01-memory-files.html }
+      - { id: "02", title: 机制选型, url: /practices/02-mechanism-selection.html }
+      - { id: "03", title: 任务框架与规划, url: /practices/03-task-framing.html }
+      - { id: "04", title: 验证闭环, url: /practices/04-verification.html }
+      - { id: "05", title: 权限与沙箱, url: /practices/05-permissions-sandbox.html }
+      - { id: "06", title: 上下文管理, url: /practices/06-context-management.html }
+      - { id: "07", title: 并行与编排, url: /practices/07-parallel-orchestration.html }
+      - { id: "08", title: 安全与治理, url: /practices/08-security-governance.html }
+      - { id: "12", title: 理解陌生代码库, url: /practices/12-codebase-mental-model.html }
+  - label: 轴二 · 验得动
+    cls: sub
+    items:
+      - { id: "09", title: 可验证的仓库, url: /practices/09-verifiable-repo.html }
+      - { id: "10", title: 硬约束下沉, url: /practices/10-hard-constraints.html }
+      - { id: "11", title: 验证技能, url: /practices/11-verification-skills.html }
+  - label: TOOLS · 工具
+    items:
+      - { id: L1, title: agentsmd-lint 查文件, url: /tools/agentsmd-lint/ }
+      - { id: L2, title: agents-doctor 查仓库, url: /tools/agents-doctor/ }
+      - { id: L3, title: agents-init 生成起点, url: /tools/agents-init/ }
+      - { id: L4, title: verify-doctor 查验证回路, url: /tools/verify-doctor/ }
+  - label: TEMPLATES · 模板
+    items:
+      - { id: T1, title: AGENTS.md 模板, url: /templates/AGENTS.md.template, external: true }
+      - { id: T2, title: RULES.md 模板, url: /templates/RULES.md.template, external: true }
+  - label: META
+    items:
+      - { id: C, title: 贡献指南, url: /CONTRIBUTING.html }
+      - { id: EN, title: English README, url: /english.html }

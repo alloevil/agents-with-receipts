@@ -43,7 +43,7 @@ verify-ready: ok 2 · warn 5 · error 0
 | 板块 | 是什么 | 回答哪条轴 | 规模 |
 |---|---|---|---|
 | [`rosetta/`](rosetta/) | 跨工具对照表：同一概念在 Claude Code、Codex、Cursor、Copilot 里各叫什么、文件放哪、就近规则差在哪 | 读得懂 | 10 概念 × 4 工具 = 40 格，每格都是官方文档链接，2026-08 逐格核实 |
-| [`practices/`](practices/) | 实践手册章节。每条实践按「场景 → 做法 → 依据 → 边界」展开，做法给可复制示例 | 00-08 读得懂，09-11 验得动 | 12 个章节，其中第 00 章是可跟做的 walkthrough |
+| [`practices/`](practices/) | 实践手册章节。每条实践按「场景 → 做法 → 依据 → 边界」展开，做法给可复制示例 | 00-08 + 12 读得懂，09-11 验得动 | 13 个章节，其中第 00 章是可跟做的 walkthrough |
 | [`tools/`](tools/) | 把这些章节变成能真跑的检查，粒度覆盖单个文件到整个仓库 | 两条轴都覆盖 | 4 个 CLI · 5 条 lint 规则 · 8 项 doctor 检查 · 10 项 verify-doctor 检查 |
 | [`templates/`](templates/) | 从真实项目提炼的 `AGENTS.md` / `RULES.md` 骨架，注释里写明用法 | 读得懂 | 2 份骨架，都保证过 lint |
 
@@ -65,8 +65,9 @@ Node ≥ 20，没有依赖需要装——四个 CLI 都是只用标准库的单�
 | **检查已有的 AGENTS.md 写得好不好** | 跑 [`agentsmd-lint`](tools/agentsmd-lint/)（查文件）和 [`agents-doctor`](tools/agents-doctor/)（查整仓基建） |
 | **想让 agent 自己验证、敢自动合 PR** | 先看 [`09 可验证的仓库`](practices/09-verifiable-repo.md) 的阶段顺序，再跑 [`verify-doctor`](tools/verify-doctor/)：按阶段报出验证回路的缺口 |
 | **改 UI 想要 agent 交出看得见的证据** | [`11 验证技能`](practices/11-verification-skills.md)：失败截图/trace、驱动真实应用、视觉证据进 PR——由 `verify-doctor` 的 `ui-evidence` 机械核查 |
+| **接手不熟的代码，或想知道它为什么长成这样** | [`12 理解陌生代码库`](practices/12-codebase-mental-model.md)：`/how` 问运行时、`/why` 查历史动机、`/teach` 要取舍，并固化成一份可提交的 skill |
 | **在换工具，或 Claude Code / Codex / Cursor 混着用** | [`rosetta/`](rosetta/) 对照表：同一概念各家叫什么、放哪、就近规则差在哪 |
-| **系统过一遍 agentic coding 的实践全景** | [`practices/`](practices/) 十二个章节，每条实践「场景→做法→依据→边界」带官方出处 |
+| **系统过一遍 agentic coding 的实践全景** | [`practices/`](practices/) 十三个章节，每条实践「场景→做法→依据→边界」带官方出处 |
 | **发现内容过期或有错** | [CONTRIBUTING.md](CONTRIBUTING.md)——带官方链接来提 PR，过期条目删除而非堆积 |
 
 只有十分钟的话：读 [`rosetta/`](rosetta/) 的「收敛格局」和「就近规则差异」两节，然后对自己的仓库跑一次 linter。
@@ -85,13 +86,13 @@ Node ≥ 20，没有依赖需要装——四个 CLI 都是只用标准库的单�
 ln -s AGENTS.md CLAUDE.md
 ```
 
-## practices——十二个章节，每条带出处
+## practices——十三个章节，每条带出处
 
 <p align="center">
   <img src="./assets/readme/section-practices.svg" width="100%" alt="第二板块 practices：实践地图，十大类实践加模板，每条断言带官方出处与验证日期。">
 </p>
 
-[`practices/`](practices/) 是十二个章节的实践手册：[00 可跟做的 walkthrough](practices/00-agent-ready-walkthrough.md)（从零配齐 agent 基建）+ 01-11 章（Memory 文件 / 机制选型 / 任务框架 / 验证闭环 / 权限沙箱 / 上下文管理 / 并行编排 / 安全治理 / 可验证的仓库 / 硬约束下沉 / 验证技能）。每条实践按「**场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界**」展开——不是要点索引，是能照着做完的工作流。
+[`practices/`](practices/) 是十三个章节的实践手册：[00 可跟做的 walkthrough](practices/00-agent-ready-walkthrough.md)（从零配齐 agent 基建）+ 01-11 章（Memory 文件 / 机制选型 / 任务框架 / 验证闭环 / 权限沙箱 / 上下文管理 / 并行编排 / 安全治理 / 可验证的仓库 / 硬约束下沉 / 验证技能）+ [12 理解陌生代码库](practices/12-codebase-mental-model.md)（`/how` 问运行时、`/why` 查 git 历史动机、`/teach` 要取舍、`/recall` 取回上下文，并把它固化成一份可提交的 skill）。每条实践按「**场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界**」展开——不是要点索引，是能照着做完的工作流。
 
 配套 [`templates/`](templates/)：从真实项目提炼的 `AGENTS.md` / `RULES.md` 骨架，注释里写明用法，和下面的 linter 配合使用。
 
@@ -166,7 +167,7 @@ Claude Code、Codex、Cursor 的最佳实践收藏已经很多，但几乎全是
 
 ## 什么时候别用
 
-- **想要效率或性能数字。** 这里没有，而且是刻意的。[`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) 只数本仓库自己的产物（40 个带出处单元格、12 个章节、4 个工具、5 条 lint 规则、8 项 doctor 检查、10 项 verify-doctor 检查、这些检查能识别的 5 个技术栈、4/4 个 CLI 支持 `--json`、0 依赖）。没有任何「照做就更快/更准」的断言——因为没测过。
+- **想要效率或性能数字。** 这里没有，而且是刻意的。[`claims.json`](https://alloevil.github.io/agents-with-receipts/claims.json) 只数本仓库自己的产物（40 个带出处单元格、13 个章节、4 个工具、5 条 lint 规则、8 项 doctor 检查、10 项 verify-doctor 检查、这些检查能识别的 5 个技术栈、4/4 个 CLI 支持 `--json`、0 依赖）。没有任何「照做就更快/更准」的断言——因为没测过。
 - **需要保证时效的厂商事实。** 对照表标的是 **2026-08**。这个领域几个月一变——每格都是链接正是为了这个：下判断前把你真正依赖的那一格点开重核一遍。
 - **想让工具直接改你的文件。** 除 `agents-init`（写新的 AGENTS.md，已存在时不加 `--force` 拒绝覆盖）外，其余都只读只报。
 - **想让 `verify-doctor` 顺手把缺口补上。** 它是检测器不是修复器：只报出缺在哪个阶段、缺哪份证据，不动你的测试、配置和 CI。它也不自带 dependency-cruiser 或 betterer——零依赖是这里的规矩——只检测你是否已经采用了这类工具。
