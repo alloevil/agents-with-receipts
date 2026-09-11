@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="t d">
+  <title id="t">Agents with Receipts · 有据可查</title>
+  <desc id="d">有据可查的 agentic coding 实践手册社交卡片：左侧是项目名、两条轴的归属与一句话价值，右侧是一张列着四个板块、每行标出凭据类型的收据小票，底部盖着「EVIDENCE ATTACHED · 有据可查」红章，页脚列出 40 sourced cells · 13 chapters · 0 dependencies 与站点地址。</desc>
+
+  <rect width="1200" height="630" rx="28" fill="#171512"/>
+
+  <!-- 左：标题、两条轴的归属 -->
+  <g transform="translate(72 96)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif">
+    <text y="0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" letter-spacing="5" fill="#8A8378">AGENTIC CODING · EVIDENCE-FIRST</text>
+    <text y="62" font-size="58" font-weight="700" fill="#F6F1E7">Agents with Receipts</text>
+    <text y="104" font-size="28" fill="#D9D2C4">有据可查 —— agentic coding 实践手册</text>
+    <text y="142" font-size="22" fill="#B8B0A2">每条断言都必须回答：出处在哪？</text>
+    <text y="172" font-size="22" fill="#B8B0A2">答案是可以点开的官方文档，而不是口号。</text>
+
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20">
+      <text y="226" fill="#D9D2C4">rosetta/ · templates/<tspan x="288" fill="#F6F1E7" font-weight="700">UNDERSTAND</tspan><tspan fill="#8A8378">读得懂</tspan></text>
+      <text y="262" fill="#D9D2C4">practices/ · tools/<tspan x="288" fill="#F6F1E7" font-weight="700">UNDERSTAND + VERIFY</tspan><tspan fill="#8A8378">两条轴</tspan></text>
+    </g>
+  </g>
+
+  <!-- 右：收据小票（四行板块 + 凭据类型 + 红章） -->
+  <g transform="translate(776 64)">
+    <rect x="10" y="16" width="384" height="416" fill="#000000" opacity="0.28"/>
+    <path fill="#F6F1E7" d="M0,9 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 l12,-7 l12,7 L384,430 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 l-12,7 l-12,-7 Z"/>
+
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#23201B">
+      <text x="192" y="56" text-anchor="middle" font-size="22" font-weight="700" letter-spacing="2">AGENTS WITH RECEIPTS</text>
+      <text x="192" y="82" text-anchor="middle" font-size="19" fill="#6B655A">EVERY CLAIM, SOURCED</text>
+      <line x1="28" y1="104" x2="356" y2="104" stroke="#23201B" stroke-width="1.5" stroke-dasharray="4 5"/>
+
+      <g font-size="19">
+        <text x="28" y="140">01 ROSETTA X-TOOL TABLE</text><text x="356" y="140" text-anchor="end">doc✓</text>
+        <text x="28" y="182">02 PRACTICES MAP</text><text x="356" y="182" text-anchor="end">doc✓</text>
+        <text x="28" y="224">03 TOOLBOX · 4 CLIS</text><text x="356" y="224" text-anchor="end">test✓</text>
+        <text x="28" y="266">04 AGENTS.MD TEMPLATES</text><text x="356" y="266" text-anchor="end">lint✓</text>
+      </g>
+
+      <line x1="28" y1="300" x2="356" y2="300" stroke="#23201B" stroke-width="1.5" stroke-dasharray="4 5"/>
+      <text x="28" y="330" font-size="21" font-weight="700">TOTAL</text>
+      <text x="356" y="330" text-anchor="end" font-size="21" font-weight="700">4 BOARDS · 2 AXES</text>
+
+      <g fill="#23201B" transform="translate(28 356)"><rect x="0" width="3" height="26"/><rect x="7" width="2" height="26"/><rect x="15" width="6" height="26"/><rect x="26" width="2" height="26"/><rect x="33" width="3" height="26"/><rect x="42" width="7" height="26"/><rect x="54" width="2" height="26"/><rect x="62" width="5" height="26"/><rect x="72" width="2" height="26"/><rect x="79" width="6" height="26"/><rect x="91" width="3" height="26"/><rect x="98" width="2" height="26"/></g>
+    </g>
+
+    <g transform="translate(112 348)">
+      <rect x="0" y="0" width="244" height="56" rx="9" fill="none" stroke="#C0392B" stroke-width="3"/>
+      <rect x="5" y="5" width="234" height="46" rx="6" fill="none" stroke="#C0392B" stroke-width="1.2" opacity="0.75"/>
+      <text x="122" y="22" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="21" font-weight="700" fill="#C0392B">EVIDENCE ATTACHED</text>
+      <text x="122" y="48" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="22" font-weight="700" fill="#C0392B" letter-spacing="7">有据可查</text>
+    </g>
+  </g>
+
+  <!-- 页脚：规模数字与站点地址 -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+    <text x="72" y="544" font-size="22" fill="#D9D2C4">40 sourced cells · 13 chapters · 0 dependencies · MIT</text>
+    <text x="1152" y="586" text-anchor="end" font-size="20" fill="#8A8378">alloevil.github.io/agents-with-receipts</text>
+  </g>
+</svg>

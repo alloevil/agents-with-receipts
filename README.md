@@ -5,7 +5,7 @@ English | [简体中文](README.zh-CN.md)
 **agents-with-receipts** is a handbook plus four zero-dependency CLIs answering two questions: can an agent **understand** your repo, and can it **verify** its own work?
 
 <p align="center">
-  <img src="./assets/readme/hero.svg" width="100%" alt="Agents with Receipts · An evidence-backed agentic coding practices handbook. On the right, a receipt-style ticket lists four boards, stamped with a red 'evidence-backed' seal: TOTAL 4 BOARDS · 0 SLOGANS.">
+  <img src="./assets/readme/hero.svg" width="100%" alt="Agents with Receipts · An evidence-backed agentic coding practices handbook. Left: the two axes and which parts answer them — rosetta/ and templates/ are UNDERSTAND, practices/ and tools/ are UNDERSTAND + VERIFY — above the figures 40 sourced cells · 13 chapters · 0 dependencies · MIT. Right: a receipt-style ticket lists the four boards with the evidence type each one carries (doc/test/lint) and totals 4 BOARDS · 2 AXES, under a red 'EVIDENCE ATTACHED · 有据可查' stamp beside a barcode.">
 </p>
 
 <p align="center">

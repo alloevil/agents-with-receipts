@@ -5,7 +5,7 @@
 **agents-with-receipts** 是一套实践手册加四个零依赖 CLI，回答两个问题：agent **读得懂**你的仓库吗，agent 在里面**验得动**自己的工作成果吗。
 
 <p align="center">
-  <img src="./assets/readme/hero.svg" width="100%" alt="Agents with Receipts · 有据可查：agentic coding 实践手册。右侧是一张列着四个板块的收据小票，盖着'有据可查'红章：TOTAL 4 BOARDS · 0 SLOGANS。">
+  <img src="./assets/readme/hero.svg" width="100%" alt="Agents with Receipts · 有据可查：agentic coding 实践手册。左侧是两条轴的归属——rosetta/ 与 templates/ 属「读得懂」，practices/ 与 tools/ 覆盖「读得懂 + 验得动」——下面列出规模数字 40 sourced cells · 13 chapters · 0 dependencies · MIT。右侧是一张列着四个板块、每行标出各自凭据类型（doc/test/lint）的收据小票，合计 4 BOARDS · 2 AXES，并在条码旁盖着「EVIDENCE ATTACHED · 有据可查」红章。">
 </p>
 
 <p align="center">
