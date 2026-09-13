@@ -1,6 +1,6 @@
 # 实践地图
 
-十三个章节 + 一篇可跟做的 walkthrough，分两条轴：01–08 与 12 讲 agent **读得懂**这个仓库（12 是接手陌生代码库时的心智模型：问运行时、问历史动机、要取舍），09–11 讲 agent **验得动**自己的工作成果。**只放有出处的断言**：每条实践按「场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界」展开，验证于 2026-09（首轮 2026-08），过期即删。
+十四个章节 + 一篇可跟做的 walkthrough，分两条轴：01–08 与 12 讲 agent **读得懂**这个仓库（12 是接手陌生代码库时的心智模型：问运行时、问历史动机、要取舍），09–11 讲 agent **验得动**自己的工作成果。**只放有出处的断言**：每条实践按「场景 → 做法（可复制示例）→ 依据（官方链接）→ 边界」展开，验证于 2026-09（首轮 2026-08），过期即删。
 
 ## 阅读顺序
 
@@ -25,6 +25,7 @@
 | 验得动 | [09 可验证的仓库](09-verifiable-repo.md) | 一条命令跑完全部、确定性、失败证据、flaky 清零 | `verify-doctor` 的 `verify-command` · `determinism` · `failure-artifacts` · `flaky-quarantine` |
 | 验得动 | [10 硬约束下沉](10-hard-constraints.md) | 规矩从提示搬到结构 / 类型 / 机械门禁 | `verify-doctor` 的 `module-boundary` · `type-strict` · `lint-hardness` · `escape-ratchet` |
 | 验得动 | [11 验证技能](11-verification-skills.md) | UI 失败证据、驱动真实应用、视觉证据进 PR | `verify-doctor` 的 `ui-evidence` |
+| 验得动 | [13 可核对的宣称](13-checkable-claims.md) | 每个对外数字配一条能重算它的命令；六种失效模式与「算不了」时怎么写 | `verify-claims` 的 `claims.json` |
 
 ## 主要来源
 

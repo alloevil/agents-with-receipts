@@ -2,7 +2,7 @@
   "project": "agents-with-receipts",
   "url": "https://alloevil.github.io/agents-with-receipts/",
   "repository": "https://github.com/alloevil/agents-with-receipts",
-  "updated": "2026-09-11",
+  "updated": "2026-09-13",
   "claims": [
     {
       "id": "rosetta-cells-all-sourced",
@@ -12,7 +12,15 @@
       "method": "The main table has 10 concept rows and 4 tool columns, giving 40 cells; counting Markdown links to external URLs inside those rows yields 40. Cell contents were first verified against vendor docs in 2026-08 and re-verified cell by cell on 2026-09-11, which corrected four Codex cells (skills scopes, hook event count, sandbox modes vs per-OS implementations, subagent location), narrowed four Cursor/Copilot cells to what their cited pages actually state, and moved every Codex citation to the canonical developers.openai.com/codex host.",
       "repro": "python3 -c \"import re;m=open('rosetta/README.md').read().split('## 主对照表')[1].split('## 2026-09')[0];rows=[l for l in m.splitlines() if l.startswith('| **')];print(sum(len(l.strip().strip('|').split('|'))-1 for l in rows), len(re.findall(r'\\]\\(https?://', m)))\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/rosetta/README.md",
-      "verified": "2026-09-11"
+      "verified": "2026-09-11",
+      "check": {
+        "cmd": "python3 -c \"import re;m=open('rosetta/README.md').read().split('## 主对照表')[1].split('## 2026-09')[0];rows=[l for l in m.splitlines() if l.startswith('| **')];print(sum(len(l.strip().strip('|').split('|'))-1 for l in rows), len(re.findall(r'\\]\\(https?://', m)))\"",
+        "timeout": 300,
+        "expect": {
+          "equals": "40 40"
+        }
+      },
+      "as_of": "2026-09-13"
     },
     {
       "id": "rosetta-codex-host-canonical",
@@ -22,7 +30,15 @@
       "method": "The 2026-09-11 re-verification found the previously cited host superseded: the docs stubs inside openai/codex point at developers.openai.com/codex/*, which serves the pages the table describes. All ten Codex cells were repointed to that host, and the four cells whose wording those pages contradicted were rewritten (skills scopes are REPO/USER/ADMIN/SYSTEM, hooks list ten events, --sandbox takes read-only/workspace-write/danger-full-access while Seatbelt/bubblewrap/Windows are per-OS implementations, and custom agents live in .codex/agents/ or ~/.codex/agents/).",
       "repro": "python3 -c \"m=open('rosetta/README.md').read();rows=[l for l in m.splitlines() if l.startswith('| **')];print(sum(l.count('developers.openai.com/codex/') for l in rows), len(rows))\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/rosetta/README.md",
-      "verified": "2026-09-11"
+      "verified": "2026-09-11",
+      "check": {
+        "cmd": "python3 -c \"m=open('rosetta/README.md').read();rows=[l for l in m.splitlines() if l.startswith('| **')];print(sum(l.count('developers.openai.com/codex/') for l in rows), len(rows))\"",
+        "timeout": 300,
+        "expect": {
+          "equals": "10 10"
+        }
+      },
+      "as_of": "2026-09-13"
     },
     {
       "id": "zero-dependencies",
@@ -32,7 +48,15 @@
       "method": "package.json declares neither a dependencies nor a devDependencies key; the tools are single-file Node ESM scripts using only the standard library. verify-doctor, added for the verification-loop axis, is likewise standard-library only: it detects whether the target repository already uses tools such as dependency-cruiser or betterer instead of bundling them.",
       "repro": "node -e \"const p=require('./package.json');console.log(Object.keys(p.dependencies||{}).length+Object.keys(p.devDependencies||{}).length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/package.json",
-      "verified": "2026-09-08"
+      "verified": "2026-09-08",
+      "check": {
+        "cmd": "node -e \"const p=require('./package.json');console.log(Object.keys(p.dependencies||{}).length+Object.keys(p.devDependencies||{}).length)\"",
+        "timeout": 300,
+        "expect": {
+          "equals": "0"
+        }
+      },
+      "as_of": "2026-09-13"
     },
     {
       "id": "cli-tool-count",
@@ -42,7 +66,15 @@
       "method": "package.json bin declares agentsmd-lint, agents-doctor, agents-init and verify-doctor, each pointing at an existing tools/<name>/index.mjs.",
       "repro": "node -e \"console.log(Object.keys(require('./package.json').bin).length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/tree/main/tools",
-      "verified": "2026-09-08"
+      "verified": "2026-09-08",
+      "check": {
+        "cmd": "node -e \"console.log(Object.keys(require('./package.json').bin).length)\"",
+        "timeout": 300,
+        "expect": {
+          "equals": "4"
+        }
+      },
+      "as_of": "2026-09-13"
     },
     {
       "id": "agentsmd-lint-rule-count",
@@ -52,7 +84,15 @@
       "method": "The rule ids max-lines, placeholder, vague, dead-script and empty-section appear in both the implementation and the tool's documented rule table.",
       "repro": "node -e \"const s=require('fs').readFileSync('tools/agentsmd-lint/index.mjs','utf8');console.log(['max-lines','placeholder','vague','dead-script','empty-section'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/tools/agentsmd-lint/README.md",
-      "verified": "2026-09-08"
+      "verified": "2026-09-08",
+      "check": {
+        "cmd": "node -e \"const s=require('fs').readFileSync('tools/agentsmd-lint/index.mjs','utf8');console.log(['max-lines','placeholder','vague','dead-script','empty-section'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
+        "timeout": 300,
+        "expect": {
+          "equals": "5"
+        }
+      },
+      "as_of": "2026-09-13"
     },
     {
       "id": "agents-doctor-check-count",
@@ -62,7 +102,15 @@
       "method": "The check ids agents-md, claude-md, rules, hooks, skills, adr, secrets and ci-gate appear in both the implementation and the tool's documented check table.",
       "repro": "node -e \"const s=require('fs').readFileSync('tools/agents-doctor/index.mjs','utf8');console.log(['agents-md','claude-md','rules','hooks','skills','adr','secrets','ci-gate'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/tools/agents-doctor/README.md",
-      "verified": "2026-09-10"
+      "verified": "2026-09-10",
+      "check": {
+        "cmd": "node -e \"const s=require('fs').readFileSync('tools/agents-doctor/index.mjs','utf8');console.log(['agents-md','claude-md','rules','hooks','skills','adr','secrets','ci-gate'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
+        "timeout": 300,
+        "expect": {
+          "equals": "8"
+        }
+      },
+      "as_of": "2026-09-13"
     },
     {
       "id": "verify-doctor-check-count",
@@ -72,7 +120,15 @@
       "method": "The check ids verify-command, determinism, failure-artifacts, ui-evidence, module-boundary, type-strict, lint-hardness, escape-ratchet, flaky-quarantine and evidence-template appear in both the implementation and the tool's documented check table; every result also carries the stage (0-5) it belongs to.",
       "repro": "node -e \"const s=require('fs').readFileSync('tools/verify-doctor/index.mjs','utf8');console.log(['verify-command','determinism','failure-artifacts','ui-evidence','module-boundary','type-strict','lint-hardness','escape-ratchet','flaky-quarantine','evidence-template'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/tools/verify-doctor/README.md",
-      "verified": "2026-09-10"
+      "verified": "2026-09-10",
+      "check": {
+        "cmd": "node -e \"const s=require('fs').readFileSync('tools/verify-doctor/index.mjs','utf8');console.log(['verify-command','determinism','failure-artifacts','ui-evidence','module-boundary','type-strict','lint-hardness','escape-ratchet','flaky-quarantine','evidence-template'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
+        "timeout": 300,
+        "expect": {
+          "equals": "10"
+        }
+      },
+      "as_of": "2026-09-13"
     },
     {
       "id": "verify-doctor-stack-coverage",
@@ -82,7 +138,15 @@
       "method": "The stack ids js-ts, python, go, rust and java-kotlin appear in the implementation's stack list and in the tool's documented stack table; per-stack detection covers both test discovery (path conventions plus in-source markers such as Rust's #[test] inside src/) and escape hatches (eslint-disable / @ts-expect-error / as any, # type: ignore / # noqa, //nolint, unwrap() / unsafe / #[allow], @SuppressWarnings). Outside these five stacks the language-agnostic checks still run, while the stack-specific ones report info with a stated reason instead of ok: a green light on a check that had nothing to look at carries no information.",
       "repro": "node -e \"const s=require('fs').readFileSync('tools/verify-doctor/index.mjs','utf8');console.log(['js-ts','python','go','rust','java-kotlin'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/tools/verify-doctor/README.md",
-      "verified": "2026-09-08"
+      "verified": "2026-09-08",
+      "check": {
+        "cmd": "node -e \"const s=require('fs').readFileSync('tools/verify-doctor/index.mjs','utf8');console.log(['js-ts','python','go','rust','java-kotlin'].filter(r=>s.includes(\\\"'\\\"+r+\\\"'\\\")).length)\"",
+        "timeout": 300,
+        "expect": {
+          "equals": "5"
+        }
+      },
+      "as_of": "2026-09-13"
     },
     {
       "id": "json-output-coverage",
@@ -92,27 +156,55 @@
       "method": "package.json bin declares four CLIs; each corresponding tools/<name>/index.mjs parses --json and, under that flag, writes a single JSON object to stdout carrying tool, target, summary and results, where every result has id, level (one of ok, warn, error, info) and message. The flag changes nothing else: the default human output and the exit code (1 only when a result is error) are identical with and without it.",
       "repro": "node -e \"const fs=require('fs');const b=Object.values(require('./package.json').bin);console.log(b.filter(p=>fs.readFileSync(p,'utf8').includes('--json')).length+'/'+b.length)\"",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/README.md#for-agents",
-      "verified": "2026-09-08"
+      "verified": "2026-09-08",
+      "check": {
+        "cmd": "node -e \"const fs=require('fs');const b=Object.values(require('./package.json').bin);console.log(b.filter(p=>fs.readFileSync(p,'utf8').includes('--json')).length+'/'+b.length)\"",
+        "timeout": 300,
+        "expect": {
+          "equals": "4/4"
+        }
+      },
+      "as_of": "2026-09-13"
     },
     {
       "id": "practice-chapter-count",
       "claim": "The practices handbook has thirteen chapters, excluding its index.",
-      "value": "13",
+      "value": "14",
       "metric": "Markdown files under practices/ other than README.md",
       "method": "Directory listing: 00-agent-ready-walkthrough plus chapters 01 through 12. The 12th chapter was added 2026-09-11 together with the skills it ships.",
       "repro": "ls practices/*.md | grep -v README | wc -l",
       "evidence": "https://github.com/alloevil/agents-with-receipts/tree/main/practices",
-      "verified": "2026-09-11"
+      "verified": "2026-09-11",
+      "as_of": "2026-09-13",
+      "check": {
+        "cmd": "ls practices/*.md | grep -v README | wc -l",
+        "timeout": 300,
+        "expect": {
+          "equals": "14"
+        }
+      }
     },
     {
       "id": "chapter-tool-map",
       "claim": "Every practices chapter states where it sits in the axis order and which tool checks its method feeds, and every check id those footers name exists in the corresponding implementation.",
-      "value": "13/13",
+      "value": "14/14",
       "metric": "chapters under practices/ carrying the three-line footer (位置 / 相关 / 对应检查), plus the check ids named there that occur in tools/*/index.mjs",
       "method": "Each chapter 00–12 ends with a footer whose 「对应检查」 line names tool check ids or says 无. The script below counts the footers, counts the structure-map rows in practices/README.md, collects the check ids named in the footers (excluding the four tool names), and checks that each id appears as a quoted string in one of the four tool implementations.",
       "repro": "python3 -c 'import re,pathlib;R=pathlib.Path(\".\");T={\"agentsmd-lint\",\"agents-doctor\",\"agents-init\",\"verify-doctor\"};F=[p for p in sorted((R/\"practices\").glob(\"*.md\")) if re.match(r\"\\d\\d-\",p.name)];M=[re.search(r\"\\*\\*对应检查\\*\\*：(.+)\",p.read_text()) for p in F];pat=chr(96)+\"([a-z][a-z-]{2,})\"+chr(96);ids=set();[ids.update(set(re.findall(pat,m.group(1)))-T) for m in M if m];src=\" \".join((R/(\"tools/\"+n+\"/index.mjs\")).read_text() for n in T);rows=len([l for l in (R/\"practices/README.md\").read_text().splitlines() if l.startswith((\"| 读得懂 |\",\"| 验得动 |\"))]);print(sum(1 for m in M if m),\"of\",len(F),\"chapters have the footer;\",rows,\"map rows;\",len(ids),\"check ids;\",sum(1 for i in ids if chr(39)+i+chr(39) not in src),\"ids absent from the implementations\")'",
       "evidence": "https://github.com/alloevil/agents-with-receipts/blob/main/practices/README.md",
-      "verified": "2026-09-11"
+      "verified": "2026-09-11",
+      "as_of": "2026-09-13",
+      "check": {
+        "cmd": "python3 -c 'import re,pathlib;R=pathlib.Path(\".\");T={\"agentsmd-lint\",\"agents-doctor\",\"agents-init\",\"verify-doctor\"};F=[p for p in sorted((R/\"practices\").glob(\"*.md\")) if re.match(r\"\\d\\d-\",p.name)];M=[re.search(r\"\\*\\*对应检查\\*\\*：(.+)\",p.read_text()) for p in F];pat=chr(96)+\"([a-z][a-z-]{2,})\"+chr(96);ids=set();[ids.update(set(re.findall(pat,m.group(1)))-T) for m in M if m];src=\" \".join((R/(\"tools/\"+n+\"/index.mjs\")).read_text() for n in T);rows=len([l for l in (R/\"practices/README.md\").read_text().splitlines() if l.startswith((\"| 读得懂 |\",\"| 验得动 |\"))]);print(sum(1 for m in M if m),\"of\",len(F),\"chapters have the footer;\",rows,\"map rows;\",len(ids),\"check ids;\",sum(1 for i in ids if chr(39)+i+chr(39) not in src),\"ids absent from the implementations\")'",
+        "timeout": 300,
+        "expect": {
+          "contains": [
+            "14 of 14 chapters have the footer",
+            "14 map rows",
+            "0 ids absent from the implementations"
+          ]
+        }
+      }
     }
   ]
 }

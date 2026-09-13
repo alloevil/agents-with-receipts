@@ -33,6 +33,7 @@ Numbering is the order chapters were added, not the order to read them — the a
 | understand | [12 Codebase mental model](practices/12-codebase-mental-model.md) | Asking the runtime, mining history for motivation, demanding trade-offs | `agents-doctor`'s `skills` · `adr` |
 | verify | [09 Verifiable repositories](practices/09-verifiable-repo.md) | One command for everything, determinism, failure evidence, flaky quarantine | `verify-doctor`'s `verify-command` · `determinism` · `failure-artifacts` · `flaky-quarantine` |
 | verify | [10 Pushing rules into hard constraints](practices/10-hard-constraints.md) | Moving rules from prose into structure, types and mechanical gates | `verify-doctor`'s `module-boundary` · `type-strict` · `lint-hardness` · `escape-ratchet` |
+| verify | [13 Checkable claims](practices/13-checkable-claims.md) | Every published number gets the command that produces it, the six failure modes, and the manual escape hatch | `verify-claims`' `claims.json` |
 | verify | [11 Verification skills](practices/11-verification-skills.md) | Failure traces and screenshots, driving the real app, visual evidence in PRs | `verify-doctor`'s `ui-evidence` |
 
 ## Install
@@ -126,8 +127,8 @@ Machine-readable copy with reproduction commands: https://alloevil.github.io/age
 | Rules enforced by `agentsmd-lint` | 5 | `max-lines`, `placeholder`, `vague`, `dead-script`, `empty-section` present in both implementation and documented rule table | see `agentsmd-lint-rule-count` in `claims.json`; behaviour covered by `node --test tools/agentsmd-lint/test/lint.test.mjs` | `tools/agentsmd-lint/README.md` |
 | Checks run by `agents-doctor` | 8 | `agents-md`, `claude-md`, `rules`, `hooks`, `skills`, `adr`, `secrets`, `ci-gate` present in both implementation and documented check table | see `agents-doctor-check-count` in `claims.json`; behaviour covered by `node --test tools/agents-doctor/test/doctor.test.mjs` | `tools/agents-doctor/README.md` |
 | Checks run by `verify-doctor` | 10 | `verify-command`, `determinism`, `failure-artifacts`, `ui-evidence`, `module-boundary`, `type-strict`, `lint-hardness`, `escape-ratchet`, `flaky-quarantine`, `evidence-template` present in both implementation and documented check table | see `verify-doctor-check-count` in `claims.json`; behaviour covered by `node --test tools/verify-doctor/test/verify-doctor.test.mjs` | `tools/verify-doctor/README.md` |
-| Chapters that state their position and the checks they feed | 13/13 | every chapter footer names its axis neighbours and the tool check ids its method feeds; every id named there exists in `tools/*/index.mjs` | `chapter-tool-map` in `claims.json` | `practices/README.md` |
-| Practice chapters, excluding the index | 13 | files under `practices/` other than `README.md`: the 00 walkthrough plus chapters 01–12 | `ls practices/*.md \| grep -v README \| wc -l` | `practices/` |
+| Chapters that state their position and the checks they feed | 14/14 | every chapter footer names its axis neighbours and the tool check ids its method feeds; every id named there exists in `tools/*/index.mjs` | `chapter-tool-map` in `claims.json` | `practices/README.md` |
+| Practice chapters, excluding the index | 14 | files under `practices/` other than `README.md`: the 00 walkthrough plus chapters 01–12 | `ls practices/*.md \| grep -v README \| wc -l` | `practices/` |
 
 Two things deliberately have **no** number attached. Cell correctness in `rosetta/` is dated (2026-09-11, first pass 2026-08) rather than scored, because it is a human verification against pages that change. And the handbook makes no claim that following it improves any measurable outcome — there is no benchmark here, and inventing one would violate the repository's own rule.
 

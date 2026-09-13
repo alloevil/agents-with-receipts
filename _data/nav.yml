@@ -38,6 +38,7 @@ groups:
       - { id: "09", title: 可验证的仓库, url: /practices/09-verifiable-repo.html }
       - { id: "10", title: 硬约束下沉, url: /practices/10-hard-constraints.html }
       - { id: "11", title: 验证技能, url: /practices/11-verification-skills.html }
+      - { id: "13", title: 可核对的宣称, url: /practices/13-checkable-claims.html }
   - label: TOOLS · 工具
     items:
       - { id: L1, title: agentsmd-lint 查文件, url: /tools/agentsmd-lint/ }

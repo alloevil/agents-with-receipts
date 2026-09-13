@@ -1,0 +1,21 @@
+name: claims
+
+# Runs the receipts behind claims.json — every published number in this handbook must still be
+# printed by the command next to it (chapter counts, tool counts, check-id coverage). Weekly as
+# well as on push, because a number can go stale without anyone committing.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: published numbers still reproduce
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: alloevil/verify-claims@v0.1.0

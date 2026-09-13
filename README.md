@@ -68,6 +68,7 @@ Numbering is the order chapters were added, not the order to read them — the a
 | verify | [09 Verifiable repositories](practices/09-verifiable-repo.md) | One command for everything, determinism, failure evidence, flaky quarantine | `verify-doctor`'s `verify-command` · `determinism` · `failure-artifacts` · `flaky-quarantine` |
 | verify | [10 Pushing rules into hard constraints](practices/10-hard-constraints.md) | Moving rules from prose into structure, types and mechanical gates | `verify-doctor`'s `module-boundary` · `type-strict` · `lint-hardness` · `escape-ratchet` |
 | verify | [11 Verification skills](practices/11-verification-skills.md) | Failure traces and screenshots, driving the real app, visual evidence in PRs | `verify-doctor`'s `ui-evidence` |
+| verify | [13 Checkable claims](practices/13-checkable-claims.md) | Every published number gets the command that produces it, plus the six ways such numbers go wrong and what to do about the ones no command can check | `verify-claims`' `claims.json` |
 
 ## Install
 
